@@ -1,26 +1,26 @@
 package msg
 
 import (
-	"log"
-	"io"
 	"errors"
+	"io"
+	"log"
 )
 
 type Message struct {
 	header *Header
-	attr []TLV
+	attr   []TLV
 }
 
 func NewRequest(msgType MessageType) *Message {
-	return &Message{ NewHeader(msgType, 0), []TLV{} }
+	return &Message{NewHeader(msgType, 0), []TLV{}}
 }
 
 func NewResponse(msgType MessageType, req *Message) *Message {
 	header := &Header{msgType, 0, req.header.id}
-	return &Message{header, []TLV{} }
+	return &Message{header, []TLV{}}
 }
 
-func DecodeMessage(conn io.Reader) (*Message, error ) {
+func DecodeMessage(conn io.Reader) (*Message, error) {
 	header, err := DecodeHeader(conn)
 	if err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ func (this *Message) AddAttribute(tlv TLV) {
 	this.header.length += tlv.Length()
 }
 
-func (this *Message) Attribute(t TLVType) (TLV, error){
+func (this *Message) Attribute(t TLVType) (TLV, error) {
 	for _, a := range this.attr {
 		if a.Type() == t {
 			return a, nil
@@ -70,7 +70,7 @@ func (this *Message) Attribute(t TLVType) (TLV, error){
 func (this *Message) String() string {
 	ret := this.header.String()
 	for _, a := range this.attr {
-		ret += "\n" + a.String() 
+		ret += "\n" + a.String()
 	}
 	return ret
 }

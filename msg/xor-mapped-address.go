@@ -1,11 +1,11 @@
 package msg
 
 import (
-	"net"
-	"encoding/binary"
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"log"
+	"net"
 )
 
 const XORMappedAddress TLVType = 0x0020
@@ -25,16 +25,16 @@ func ToXORAddress(tlv TLV, header *Header) (*XORAddress, error) {
 func NewXORAddress(ip net.IP, port int, header *Header) *XORAddress {
 	log.Println("ip", ip)
 	xport := []byte{0, 0}
-    binary.BigEndian.PutUint16(xport, uint16(port))
+	binary.BigEndian.PutUint16(xport, uint16(port))
 
 	// TODO: Make IPV6 work
-//	isV4 := ip.To4() != nil
+	//	isV4 := ip.To4() != nil
 
 	for i := 0; i < net.IPv4len; i++ {
 		ip[i] = ip[i] ^ MagicCookie[i]
 	}
-	
-/*	if !isV4 {
+
+	/*	if !isV4 {
 		log.Println("IPV6 Address found", ip)
 		for i := 4; i < 16; i++ {
 			log.Println(header.id, len(header.id), i)
@@ -46,9 +46,9 @@ func NewXORAddress(ip net.IP, port int, header *Header) *XORAddress {
 		xport[i] = xport[i] ^ MagicCookie[i]
 	}
 
-	value := []byte{ 0, 1} // TODO: Add Family correctly
-	value = append( value, xport...)
-	value = append( value, ip...)
+	value := []byte{0, 1} // TODO: Add Family correctly
+	value = append(value, xport...)
+	value = append(value, ip...)
 	log.Println("ip", ip)
 
 	return &XORAddress{&TLVBase{XORMappedAddress, value}, header}
@@ -80,9 +80,8 @@ func (this *XORAddress) Port() int {
 	for i := 0; i < 2; i++ {
 		p[i] = p[i] ^ MagicCookie[i]
 	}
-	
+
 	var port int = 0
 	binary.Read(bytes.NewBuffer(p), binary.BigEndian, port)
 	return port
 }
-

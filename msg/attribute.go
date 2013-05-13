@@ -1,12 +1,14 @@
 package msg
 
 import (
-	"encoding/binary"
-	"strconv"
 	"bytes"
+	"encoding/binary"
 	"io"
+	"strconv"
+
 //	"log"
 )
+
 /*Comprehension-required range (0x0000-0x7FFF):
 0x0000: (Reserved)
 0x0001: MAPPED-ADDRESS
@@ -41,12 +43,10 @@ const UnknownTLVTypes TLVType = 0x000A
 const Realm TLVType = 0x0014
 const Nonce TLVType = 0x0015
 
-
 // Comprehension-optional range (0x8000-0xFFFF)
 const Software TLVType = 0x8022
 const AlternateServer TLVType = 0x8023
 const FingerPrint TLVType = 0x8028
-
 
 type TLV interface {
 	Type() TLVType
@@ -61,23 +61,23 @@ type TLV interface {
 // 0x8000 and 0xFFFF optional. Ignore if not known
 type TLVBase struct {
 	attrType TLVType
-	value []byte
+	value    []byte
 }
 
 func (this *TLVBase) Encode() []byte {
 
 	ret := make([]byte, 0, this.Length())
-	t := []byte{0,0}
+	t := []byte{0, 0}
 	binary.BigEndian.PutUint16(t, uint16(this.Type()))
 	ret = append(ret, t...)
 
-	l := []byte{0,0}
+	l := []byte{0, 0}
 	binary.BigEndian.PutUint16(l, uint16(this.Length()))
 	ret = append(ret, l...)
-	
+
 	v := this.Value()
 	paddingLen := this.Length() % 4
-	v = append(v,  make([]byte, paddingLen)...)
+	v = append(v, make([]byte, paddingLen)...)
 	return append(ret, this.Value()...)
 }
 
@@ -93,18 +93,18 @@ func Decode(in io.Reader) (TLV, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var length uint16 = 0
 	err = binary.Read(bytes.NewBuffer(buf[2:4]), binary.BigEndian, &length)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	v, err := Read(in, int(length))
 	if err != nil {
 		return nil, err
 	}
-	
+
 	padding := int(length % 4)
 	Read(in, padding)
 
@@ -123,11 +123,8 @@ func (this *TLVBase) Value() []byte {
 	return this.value
 }
 
-
 func (this *TLVBase) String() string {
 	ret := "TLVBase:\nAttribute Type: " + strconv.Itoa(int(this.Type()))
 	ret += "\nLength: " + strconv.Itoa(int(this.Length()))
-	return  ret // "\nvalue: " + string(this.Value())
+	return ret // "\nvalue: " + string(this.Value())
 }
-
-

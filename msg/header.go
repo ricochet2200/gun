@@ -1,21 +1,22 @@
 package msg
 
 import (
-	"log"
-	"errors"
-	"math/rand"
-	"encoding/binary"
 	"bytes"
+	"encoding/binary"
+	"errors"
 	"io"
+	"log"
+	"math/rand"
 	"strconv"
 )
 
 type MessageType uint16
+
 const (
-	Request MessageType = 0x0b00
+	Request    MessageType = 0x0b00
 	Indication MessageType = 0x0b01
-	Success MessageType = 0x0b01
-	Error MessageType = 0x0b11
+	Success    MessageType = 0x0b01
+	Error      MessageType = 0x0b11
 
 	Binding MessageType = 0x0001
 )
@@ -24,7 +25,7 @@ var MagicCookie = []byte{33, 18, 164, 66}
 
 type Header struct {
 	msgType MessageType
-	length uint16 // size of msg in bytes, not including header
+	length  uint16 // size of msg in bytes, not including header
 	// MagicCookie
 	id []byte
 }
@@ -38,7 +39,7 @@ func NewHeader(msgType MessageType, length uint16) *Header {
 	return &Header{msgType, length, id}
 }
 
-func DecodeHeader(conn io.Reader) (*Header, error ) {
+func DecodeHeader(conn io.Reader) (*Header, error) {
 
 	buf, err := Read(conn, 20)
 	if err != nil {
@@ -46,9 +47,8 @@ func DecodeHeader(conn io.Reader) (*Header, error ) {
 	}
 
 	// Make sure magic cookie is in the right place
-	if  buf[4] == MagicCookie[0] && buf[5] == MagicCookie[1] &&
-		buf[6] == MagicCookie[2] &&	buf[7] == MagicCookie[3] {
-		
+	if buf[4] == MagicCookie[0] && buf[5] == MagicCookie[1] &&
+		buf[6] == MagicCookie[2] && buf[7] == MagicCookie[3] {
 
 		var msgType uint16 = 0
 		err := binary.Read(bytes.NewBuffer(buf[0:2]), binary.BigEndian, &msgType)
@@ -63,24 +63,23 @@ func DecodeHeader(conn io.Reader) (*Header, error ) {
 		}
 
 		header := &Header{MessageType(msgType), length, buf[8:20]}
-		
+
 		// Check that first to bits are 0s
-		if  header.msgType > 16383  {
-			
+		if header.msgType > 16383 {
+
 			return nil, errors.New("Bad message type")
 		}
 
-		if header.length % 4 != 0 {
+		if header.length%4 != 0 {
 			return nil, errors.New("Message length not a multiple of 4")
 		}
-		
+
 		return header, nil
 
 	} else {
 		log.Println(buf, MagicCookie)
 		return nil, errors.New("Magic cookie is inedible")
 	}
-
 
 	log.Println("Go 1.1 makes it so I don't have to do this")
 	return nil, nil
@@ -94,15 +93,15 @@ func (this *Header) TransactionId() []byte {
 	return this.id
 }
 
-func (this *Header) Data() []byte{
-	
+func (this *Header) Data() []byte {
+
 	ret := make([]byte, 0, 20)
 
-	msg := []byte{0,0}
+	msg := []byte{0, 0}
 	binary.BigEndian.PutUint16(msg, uint16(this.msgType))
 	ret = append(ret, msg...)
 
-	l := []byte{0,0}
+	l := []byte{0, 0}
 	binary.BigEndian.PutUint16(l, this.length)
 	ret = append(ret, l...)
 
@@ -113,17 +112,17 @@ func (this *Header) Data() []byte{
 }
 
 func (this *Header) String() string {
-	
+
 	ret := "Header:\ntype: " + strconv.Itoa(int(this.msgType))
 	ret += "\nlength: " + strconv.Itoa(int(this.length))
 	ret += "\nid: "
-	for i := 0; i < len(this.id); i +=4 {
+	for i := 0; i < len(this.id); i += 4 {
 
 		var id int32 = 0
 		binary.Read(bytes.NewBuffer(this.id[i:i+4]), binary.BigEndian, &id)
 		ret += strconv.Itoa(int(id))
 	}
-	
+
 	return ret
 
 }
