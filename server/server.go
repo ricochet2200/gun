@@ -1,7 +1,7 @@
 package server
 
 import (
-	"../msg"
+	"github.com/ricochet2200/gun/msg"
 	"log"
 	"net"
 	"strconv"

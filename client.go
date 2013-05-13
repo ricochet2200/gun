@@ -1,7 +1,7 @@
 package main
 
 import (
-	"./client"
+	"github.com/ricochet2200/gun/client"
 	"log"
 )
 

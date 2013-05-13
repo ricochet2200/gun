@@ -1,7 +1,7 @@
 package main
 
 import (
-	"./server"
+	"github.com/ricochet2200/gun/server"
 )
 
 func main() {

@@ -1,7 +1,7 @@
 package client
 
 import (
-	"../msg"
+	"github.com/ricochet2200/gun/msg"
 	"errors"
 	"log"
 	"net"
