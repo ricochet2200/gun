@@ -5,8 +5,9 @@ import (
 	"encoding/binary"
 	"io"
 	"strconv"
+	"errors"
 
-//	"log"
+	"log"
 )
 
 /*Comprehension-required range (0x0000-0x7FFF):
@@ -36,17 +37,25 @@ type TLVType uint16
 
 // Comprehension-required range (0x0000-0x7FFF):
 const MappedAddress TLVType = 0x0001
-const Username TLVType = 0x0006
-const MessageIntegrety TLVType = 0x0008
 const ErrorCode TLVType = 0x0009
 const UnknownTLVTypes TLVType = 0x000A
-const Realm TLVType = 0x0014
-const Nonce TLVType = 0x0015
 
 // Comprehension-optional range (0x8000-0xFFFF)
 const Software TLVType = 0x8022
 const AlternateServer TLVType = 0x8023
 const FingerPrint TLVType = 0x8028
+
+
+
+type StunErrorCode int16
+
+const TryAlternative StunErrorCode = 300
+const BadRequest StunErrorCode = 400
+const Unauthorized StunErrorCode = 401
+const UnknownAttribute StunErrorCode = 420
+const StaleNonce StunErrorCode = 438
+const ServerError StunErrorCode = 500
+
 
 type TLV interface {
 	Type() TLVType
@@ -78,37 +87,38 @@ func (this *TLVBase) Encode() []byte {
 	v := this.Value()
 	paddingLen := this.Length() % 4
 	v = append(v, make([]byte, paddingLen)...)
-	return append(ret, this.Value()...)
+	return append(ret, v...)
 }
 
-func Decode(in io.Reader) (TLV, error) {
+func Decode(in io.Reader) (TLV, int, error) {
 
 	buf, err := Read(in, 4)
 	if err != nil {
-		return nil, err
+		log.Println("TLV missing header", err)
+		return nil, 0, err
 	}
 
 	var t uint16 = 0
 	err = binary.Read(bytes.NewBuffer(buf[0:2]), binary.BigEndian, &t)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-
+	
 	var length uint16 = 0
 	err = binary.Read(bytes.NewBuffer(buf[2:4]), binary.BigEndian, &length)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	v, err := Read(in, int(length))
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	padding := int(length % 4)
 	Read(in, padding)
 
-	return &TLVBase{TLVType(t), v}, nil
+	return &TLVBase{TLVType(t), v}, padding, nil
 }
 
 func (this *TLVBase) Type() TLVType {
@@ -127,4 +137,47 @@ func (this *TLVBase) String() string {
 	ret := "TLVBase:\nAttribute Type: " + strconv.Itoa(int(this.Type()))
 	ret += "\nLength: " + strconv.Itoa(int(this.Length()))
 	return ret // "\nvalue: " + string(this.Value())
+}
+
+type StunError struct {
+	TLV
+}
+
+func ToStunError(tlv TLV) *StunError {
+	return &StunError{tlv}
+}
+
+func NewErrorAttr(code StunErrorCode, msg string) (*StunError, error) {
+
+	class := code / 100
+	if class < 3 || class > 6 {
+		return nil, errors.New("Invalid error code. Valid code:299 < code < 700")
+	}
+	
+	if len(msg) > 128 {
+		return nil, errors.New("Message needs to be under 128 characters")
+	}
+
+	v := []byte{0,0, byte(class), byte(code % 100) }
+	v = append(v, []byte(msg)...)
+
+	return ToStunError(&TLVBase{ErrorCode, v}), nil
+}
+
+func (this *StunError) Code() (StunErrorCode, error) {
+
+	buf := this.Value()
+	var family uint8 = 0
+	err := binary.Read(bytes.NewBuffer(buf[2:3]), binary.BigEndian, &family)
+	if err != nil {
+		return 0, err
+	}
+
+	var code uint8 = 0
+	err = binary.Read(bytes.NewBuffer(buf[3:4]), binary.BigEndian, &code)
+	if err != nil {
+		return 0, err
+	}
+
+	return StunErrorCode(family) * 100 + StunErrorCode(code), nil
 }

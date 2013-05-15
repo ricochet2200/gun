@@ -13,11 +13,13 @@ import (
 type MessageType uint16
 
 const (
+	//Classes
 	Request    MessageType = 0x0b00
 	Indication MessageType = 0x0b01
 	Success    MessageType = 0x0b01
 	Error      MessageType = 0x0b11
 
+	// Methods
 	Binding MessageType = 0x0001
 )
 
@@ -31,7 +33,7 @@ type Header struct {
 }
 
 func NewHeader(msgType MessageType, length uint16) *Header {
-	id := make([]byte, 0, 3*4)
+	id := make([]byte, 3*4)
 	for i := 0; i < 3; i++ {
 		binary.BigEndian.PutUint32(id[i*4:(i+1)*4], uint32(rand.Int31()))
 	}
@@ -83,6 +85,10 @@ func DecodeHeader(conn io.Reader) (*Header, error) {
 
 	log.Println("Go 1.1 makes it so I don't have to do this")
 	return nil, nil
+}
+
+func (this *Header) Copy() *Header {
+	return &Header{this.msgType, this.length, this.id}
 }
 
 func (this *Header) SetLength(length uint16) {

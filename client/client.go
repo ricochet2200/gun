@@ -5,99 +5,126 @@ import (
 	"errors"
 	"log"
 	"net"
-	"time"
 )
 
 type Client struct {
-	server                     string
-	rm                         int // Default 16
-	rcDefault                  int // Retransmission Count. Default 7
-	rto                        int // ms.  Retransmission TimeOut. See RCF 2988 for default.
+	server string
 	maxOutstandingTransactions int
+	username string
+	password string 	//TODO: SASLPrep the password
 }
 
-func NewClient(server string) *Client {
-	return &Client{server, 16, 7, 500, 10}
+func NewClient(server, user, passwd string) *Client {
+	return &Client{server, 10, user, passwd}
 }
 
-func (this *Client) ConnectTCP() (net.IP, int, error) {
+// Sends a request where you expect to get a response back
+func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
+
 	conn, err := net.Dial("tcp", this.server)
 	if err != nil {
 		log.Println("Failed to create connection: ", err)
-		return nil, -1, err
+		return nil, err
 	}
-	return this.Bind(conn)
-}
 
-func (this *Client) ConnectUDP() (net.IP, int, error) {
+	this.maxOutstandingTransactions += 1
 
-	conn, err := net.Dial("udp", this.server)
+	log.Println(req)
+	conn.Write(req.EncodeMessage())
+	
+	res, err := msg.DecodeMessage(conn)
+	this.maxOutstandingTransactions -= 1
+
 	if err != nil {
-		log.Println("Failed to create connection: ", err)
-		return nil, -1, err
-	}
-	return this.Bind(conn)
-}
+		conn.Close()
+		return nil, err
+	} 
 
-func (this *Client) Bind(conn net.Conn) (net.IP, int, error) {
+	log.Println("Message recieved\n", res)
 
-	response := make(chan *msg.Message)
+	if attr, err := res.Attribute(msg.ErrorCode); err == nil {
 
-	go func(response chan *msg.Message) {
-		for {
-			if msg, err := msg.DecodeMessage(conn); err != nil {
-				log.Println(err)
-			} else {
-				response <- msg
-			}
-		}
-	}(response)
+		eCode := msg.ToStunError(attr)
+		if code, err := eCode.Code(); err == nil{
+			log.Println("error code", code)			
+			switch(code) {
 
-	req := msg.NewRequest(msg.Request | msg.Binding).EncodeMessage()
-	log.Println("Connecting to STUN Server")
-	conn.Write(req)
+			case msg.StaleNonce :
+				log.Println("Stale Nonce, calling authenticate...")
+				conn.Close()
+				return this.Authenticate(res)
 
-	rc := 1
-	rcDefault := this.rcDefault
-	tmpRto := this.rto
-	rto := time.After(time.Duration(this.rto) * time.Millisecond)
-	res := (*msg.Message)(nil)
+			case msg.Unauthorized :
+				log.Println("unauthorized")
 
-	for {
-		select {
-		case <-rto:
-			rc++
-			if rc < rcDefault {
-				tmpRto = tmpRto*2 + this.rto
-			} else if rc == rcDefault {
-				tmpRto = tmpRto + this.rto*this.rm
-			} else {
-				log.Println("Server timed out")
-				return nil, -1, errors.New("Server timed out")
-			}
-
-			rto = time.After(time.Duration(tmpRto) * time.Millisecond)
-			log.Println("Trying again in..", tmpRto, "ms")
-
-			conn.Write(req)
-
-		case res = <-response:
-			log.Println("recieved a response")
-			this.rto = tmpRto
-			if tlv, err := res.Attribute(msg.XORMappedAddress); err != nil {
-				log.Println("Unusable message response")
-			} else {
-				xorAddr, err := msg.ToXORAddress(tlv, res.Header())
-				if err != nil {
-					log.Println("Error: Malformed response by the server")
-					return nil, -1, errors.New("Malformed response by server")
+				if _, err := req.Attribute(msg.MessageIntegrity); err == nil {
+					conn.Close() // We already tried once...
+					return nil, errors.New("Invalid credentials")
+				} else {
+					conn.Close()
+					return this.Authenticate(res)
 				}
 
-				log.Println("Good message recieved")
-				return xorAddr.IP(), xorAddr.Port(), nil
+			case msg.BadRequest:
+					conn.Close()
+					return nil, errors.New("Client error. Bad Request")
 			}
 		}
 	}
+	
+	return &Connection{res, conn}, nil
+}
 
-	return nil, -1, nil // This will never happen
+func (this *Client) Bind() (net.IP, int, error) {
+
+	log.Println("Binding...")
+	req := msg.NewRequest(msg.Request | msg.Binding)
+	c, err := this.SendReqRes(req)
+	if err != nil {
+		return nil, -1, err
+	} 
+
+	return ToIPPort(c)
+}	
+
+func ToIPPort(conn *Connection) (net.IP, int, error) {
+
+	tlv, err := conn.msg.Attribute(msg.XORMappedAddress)
+	if err != nil {
+		return nil, -1, err
+	} 
+	
+	xorAddr, err := msg.ToXORAddress(tlv, conn.msg.Header())
+	if err != nil {
+		log.Println("Error: Malformed response by the server")
+		return nil, -1, errors.New("Malformed response by server")
+	}
+	
+	log.Println("Good message recieved")
+	return xorAddr.IP(), xorAddr.Port(), nil
+}
+
+
+func (this *Client) Authenticate(res *msg.Message) (*Connection, error) {
+
+	req := msg.NewRequest(msg.Request | msg.Binding)
+	user, err := msg.NewUser(this.username)
+	if err != nil {
+		return nil, err
+	}
+
+	req.AddAttribute(user)
+
+	r, _ := res.Attribute(msg.Realm)
+	realm := string(r.Value())
+	req.AddAttribute(r)
+	
+
+	nounce, _ := res.Attribute(msg.Nonce)
+	req.AddAttribute(nounce)
+
+	integrity := msg.NewIntegrityAttr(this.username, this.password, realm, req)
+	req.AddAttribute(integrity)
+
+	return this.SendReqRes(req)
 }

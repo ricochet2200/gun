@@ -21,15 +21,17 @@ func NewResponse(msgType MessageType, req *Message) *Message {
 }
 
 func DecodeMessage(conn io.Reader) (*Message, error) {
+
 	header, err := DecodeHeader(conn)
 	if err != nil {
 		return nil, err
 	}
+
 	tvl := []TLV{}
 	for i := uint16(0); i < header.length; {
-		if t, err := Decode(conn); err == nil {
+		if t, padding, err := Decode(conn); err == nil {
 			tvl = append(tvl, t)
-			i += t.Length()
+			i += t.Length() + uint16(padding)
 		}
 	}
 
@@ -55,7 +57,8 @@ func (this *Message) Header() *Header {
 
 func (this *Message) AddAttribute(tlv TLV) {
 	this.attr = append(this.attr, tlv)
-	this.header.length += tlv.Length()
+	// make sure it is on a 4 byte block
+	this.header.length += ((tlv.Length() +3 ) / 4) * 4
 }
 
 func (this *Message) Attribute(t TLVType) (TLV, error) {
