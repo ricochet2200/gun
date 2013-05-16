@@ -87,6 +87,10 @@ func DecodeHeader(conn io.Reader) (*Header, error) {
 	return nil, nil
 }
 
+func (this *Header) Type() MessageType {
+	return this.msgType
+}
+
 func (this *Header) Copy() *Header {
 	return &Header{this.msgType, this.length, this.id}
 }

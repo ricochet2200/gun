@@ -38,28 +38,20 @@ type NonceAttr struct {
 }
 
 func NewNonce() (*NonceAttr) {
-	
 	// TODO: Pick a better nonce
-	now := time.Now().Add(time.Duration(1) * time.Minute).Unix()
-	b := make([]byte, 8)
-	binary.BigEndian.PutUint64(b, uint64(now))
-
-	return ToNonce(&TLVBase{Nonce, b})
+	expires := time.Now().Add(time.Duration(1) * time.Minute)
+	return &NonceAttr{&TLVBase{Nonce, TimeToBytes(expires)}}
 }
 
-func ToNonce(t TLV) *NonceAttr {
-	return &NonceAttr{t}
-}
+func ValidNonce(t TLV) bool {
 
-func (this *NonceAttr) Valid() bool {
-
-	var t int64 = 0
-	err := binary.Read(bytes.NewBuffer(this.Value()), binary.BigEndian, &t)
+	var ret int64 = 0
+	err := binary.Read(bytes.NewBuffer(t.Value()), binary.BigEndian, &ret)
 	if err != nil {
 		return false
 	}
 
-	return time.Unix(t, 0).After(time.Now())
+	return time.Unix(ret, 0).After(time.Now())
 }
 
 type UserAttr struct {
@@ -74,6 +66,10 @@ func NewUser(username string) (*UserAttr, error) {
 	}
 
 	return &UserAttr{&TLVBase{Username, []byte(username)}}, nil
+}
+
+func ToUsername (t TLV) string {
+	return string(t.Value())
 }
 
 type IntegrityAttr struct {

@@ -31,5 +31,5 @@ func main() {
 		}
 	}()
 
-	server.StartTCP()
+	server.Start()
 }

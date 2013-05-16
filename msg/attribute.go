@@ -73,6 +73,10 @@ type TLVBase struct {
 	value    []byte
 }
 
+func NewTLV(t TLVType, v []byte) *TLVBase{
+	return &TLVBase{t, v}
+}
+
 func (this *TLVBase) Encode() []byte {
 
 	ret := make([]byte, 0, this.Length())
@@ -143,10 +147,6 @@ type StunError struct {
 	TLV
 }
 
-func ToStunError(tlv TLV) *StunError {
-	return &StunError{tlv}
-}
-
 func NewErrorAttr(code StunErrorCode, msg string) (*StunError, error) {
 
 	class := code / 100
@@ -161,12 +161,12 @@ func NewErrorAttr(code StunErrorCode, msg string) (*StunError, error) {
 	v := []byte{0,0, byte(class), byte(code % 100) }
 	v = append(v, []byte(msg)...)
 
-	return ToStunError(&TLVBase{ErrorCode, v}), nil
+	return &StunError{&TLVBase{ErrorCode, v}}, nil
 }
 
-func (this *StunError) Code() (StunErrorCode, error) {
+func Code(t TLV) (StunErrorCode, error) {
 
-	buf := this.Value()
+	buf := t.Value()
 	var family uint8 = 0
 	err := binary.Read(bytes.NewBuffer(buf[2:3]), binary.BigEndian, &family)
 	if err != nil {
