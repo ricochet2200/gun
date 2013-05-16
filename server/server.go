@@ -39,11 +39,6 @@ func (this *Server) Start() error {
 		}
 
 		raddr := conn.RemoteAddr()
-		if raddr == nil { // If null it is probably localhost
-			raddr = conn.LocalAddr()
-			log.Println("Using localAddr because remote is null", raddr)
-		}
-
 		ip := raddr.(*net.TCPAddr).IP
 		port := raddr.(*net.TCPAddr).Port
 		go this.handleConnection(conn, ip, port)
@@ -71,7 +66,6 @@ func (this *Server) handleConnection(out net.Conn, ip net.IP, port int) {
 			xorAddr := msg.NewXORAddress(ip, port, res.Header())
 			res.AddAttribute(xorAddr)
 			
-			log.Println("Responding\n\n", res)
 			out.Write(res.EncodeMessage())
 
 			this.conns <- conn
@@ -124,7 +118,7 @@ func (this *Server) Validate(conn *Connection) bool {
 		res.AddAttribute(r)
 		res.AddAttribute(n)
 		
-		log.Println("No Integrity\n\n", res)
+		log.Println("No Integrity")
 		out.Write(res.EncodeMessage())
 		return false
 
@@ -133,7 +127,7 @@ func (this *Server) Validate(conn *Connection) bool {
 		e, _ := msg.NewErrorAttr(msg.BadRequest, "Bad Request")
 		res.AddAttribute(e)
 		
-		log.Println("Missing user, nonce, or realm\n\n", res)
+		log.Println("Missing user, nonce, or realm")
 		out.Write(res.EncodeMessage())
 		return false
 
@@ -145,7 +139,7 @@ func (this *Server) Validate(conn *Connection) bool {
 		res.AddAttribute(r)
 		res.AddAttribute(n)
 		
-		log.Println("User Not Found\n\n", res)
+		log.Println("User Not Found")
 		out.Write(res.EncodeMessage())	
 		return false
 
@@ -156,7 +150,7 @@ func (this *Server) Validate(conn *Connection) bool {
 		res.AddAttribute(r)
 		res.AddAttribute(n)
 		
-		log.Println("Invalide Nonce\n\n", res)
+		log.Println("Invalide Nonce")
 		out.Write(res.EncodeMessage())
 		return false
 		
@@ -167,7 +161,7 @@ func (this *Server) Validate(conn *Connection) bool {
 		res.AddAttribute(r)
 		res.AddAttribute(n)
 		
-		log.Println("Invalid integrity \n\n", res)
+		log.Println("Invalid integrity")
 		out.Write(res.EncodeMessage())
 		return false
 	}
@@ -186,6 +180,5 @@ func (this *Server) RespondBind(conn *Connection) {
 		res.AddAttribute(i)
 	}
 
-	log.Println("Responding\n\n", res)
 	conn.Out.Write(res.EncodeMessage())
 }

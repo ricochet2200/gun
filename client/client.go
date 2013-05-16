@@ -29,7 +29,6 @@ func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 
 	this.maxOutstandingTransactions += 1
 
-	log.Println(req)
 	conn.Write(req.EncodeMessage())
 	
 	res, err := msg.DecodeMessage(conn)
@@ -40,7 +39,7 @@ func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 		return nil, err
 	} 
 
-	log.Println("Message recieved\n", res)
+	log.Println("Message recieved\n")
 
 	if attr, err := res.Attribute(msg.ErrorCode); err == nil {
 		if code, err := msg.Code(attr); err == nil{
@@ -87,19 +86,13 @@ func (this *Client) Bind() (net.IP, int, error) {
 
 func ToIPPort(conn *Connection) (net.IP, int, error) {
 
-	tlv, err := conn.msg.Attribute(msg.XORMappedAddress)
+	xor, err := conn.msg.Attribute(msg.XORMappedAddress)
 	if err != nil {
 		return nil, -1, err
 	} 
 	
-	xorAddr, err := msg.ToXORAddress(tlv, conn.msg.Header())
-	if err != nil {
-		log.Println("Error: Malformed response by the server")
-		return nil, -1, errors.New("Malformed response by server")
-	}
-	
 	log.Println("Good message recieved")
-	return xorAddr.IP(), xorAddr.Port(), nil
+	return msg.IP(xor), msg.Port(xor), nil
 }
 
 

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"log"
+//	"log"
 	"net"
 )
 
@@ -23,7 +23,8 @@ func ToXORAddress(tlv TLV, header *Header) (*XORAddress, error) {
 }
 
 func NewXORAddress(ip net.IP, port int, header *Header) *XORAddress {
-	log.Println("ip", ip)
+
+	xip := []byte{0,0,4,0}
 	xport := []byte{0, 0}
 	binary.BigEndian.PutUint16(xport, uint16(port))
 
@@ -31,7 +32,7 @@ func NewXORAddress(ip net.IP, port int, header *Header) *XORAddress {
 	//	isV4 := ip.To4() != nil
 
 	for i := 0; i < net.IPv4len; i++ {
-		ip[i] = ip[i] ^ MagicCookie[i]
+		xip[i] = ip.To4()[i] ^ MagicCookie[i]
 	}
 
 	/*	if !isV4 {
@@ -48,19 +49,14 @@ func NewXORAddress(ip net.IP, port int, header *Header) *XORAddress {
 
 	value := []byte{0, 1} // TODO: Add Family correctly
 	value = append(value, xport...)
-	value = append(value, ip...)
-	log.Println("ip", ip)
+	value = append(value, xip...)
 
 	return &XORAddress{&TLVBase{XORMappedAddress, value}, header}
 }
 
-func (this *XORAddress) Type() TLVType {
-	return XORMappedAddress
-}
+func IP(t TLV) net.IP {
 
-func (this *XORAddress) IP() net.IP {
-
-	v := this.Value()[4:]
+	v := t.Value()[4:]
 	for i := 0; i < 4; i++ {
 		v[i] = v[i] ^ MagicCookie[i]
 	}
@@ -71,17 +67,16 @@ func (this *XORAddress) IP() net.IP {
 			v[i] = v[i] ^ this.header.id[i-4]
 		}
 	}*/
-
 	return v
 }
 
-func (this *XORAddress) Port() int {
-	p := this.Value()[2:4]
+func Port(t TLV) int {
+	p := t.Value()[2:4]
 	for i := 0; i < 2; i++ {
 		p[i] = p[i] ^ MagicCookie[i]
 	}
 
-	var port int = 0
-	binary.Read(bytes.NewBuffer(p), binary.BigEndian, port)
-	return port
+	var port uint16 = 0
+	binary.Read(bytes.NewBuffer(p), binary.BigEndian, &port)
+	return int(port)
 }

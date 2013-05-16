@@ -3,7 +3,7 @@ package msg
 import (
 	"errors"
 	"io"
-	"log"
+//	"log"
 )
 
 type Message struct {
@@ -47,7 +47,6 @@ func (this *Message) EncodeMessage() []byte {
 }
 
 func (this *Message) Type() MessageType {
-	log.Println(this.header)
 	return this.header.msgType
 }
 

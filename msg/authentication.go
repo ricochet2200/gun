@@ -101,7 +101,6 @@ func (this *IntegrityAttr) Valid(user, passwd, realm string, msg *Message) bool 
 	}
 
 	h1 := i.Value()
-	log.Println(h1)
 	return len(h1) == len(h2) && subtle.ConstantTimeCompare(h1, h2) == 1
 }
 
@@ -109,7 +108,6 @@ func CreateHMAC (user, passwd, realm string, msg *Message) []byte {
 
  	hash := md5.New()
 	key := user + ":" + realm + ":" + passwd
-	log.Println("key:", key)
 	io.WriteString(hash, key)
 
 	mac := hmac.New(sha256.New, hash.Sum(nil))
