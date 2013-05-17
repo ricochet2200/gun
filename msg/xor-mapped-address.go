@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-//	"log"
+	"log"
 	"net"
 )
 
@@ -28,11 +28,17 @@ func NewXORAddress(ip net.IP, port int, header *Header) *XORAddress {
 	xport := []byte{0, 0}
 	binary.BigEndian.PutUint16(xport, uint16(port))
 
+	nip := ip.To4()
+	if nip == nil {
+		log.Println("Unsupported ip type", ip)
+		nip = ip
+	}
+
 	// TODO: Make IPV6 work
 	//	isV4 := ip.To4() != nil
 
 	for i := 0; i < net.IPv4len; i++ {
-		xip[i] = ip.To4()[i] ^ MagicCookie[i]
+		xip[i] = nip[i] ^ MagicCookie[i]
 	}
 
 	/*	if !isV4 {
