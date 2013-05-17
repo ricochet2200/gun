@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"net"
+	"time"
 )
 
 type Client struct {
@@ -21,7 +22,7 @@ func NewClient(server, user, passwd string) *Client {
 // Sends a request where you expect to get a response back
 func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 
-	conn, err := net.Dial("tcp", this.server)
+	conn, err := net.DialTimeout("tcp", this.server, 15 * time.Second)
 	if err != nil {
 		log.Println("Failed to create connection: ", err)
 		return nil, err
@@ -81,6 +82,7 @@ func (this *Client) Bind() (net.IP, int, error) {
 		return nil, -1, err
 	} 
 
+	c.out.Close()
 	return ToIPPort(c)
 }	
 
