@@ -164,6 +164,10 @@ func NewErrorAttr(code StunErrorCode, msg string) (*StunError, error) {
 	return &StunError{&TLVBase{ErrorCode, v}}, nil
 }
 
+func ErrorString(t TLV) string {
+	return string(t.Value()[4:])
+}
+
 func Code(t TLV) (StunErrorCode, error) {
 
 	buf := t.Value()
