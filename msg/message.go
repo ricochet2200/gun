@@ -61,6 +61,11 @@ func (this *Message) AddAttribute(tlv TLV) {
 }
 
 func (this *Message) CopyAttributes(other *Message) {
+
+	if other == nil {
+		return 
+	}
+
 	for _, a := range other.attr {
 		this.AddAttribute(a)
 	}
