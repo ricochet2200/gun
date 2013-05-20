@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"time"
+	"syscall"
 )
 
 type Client struct {
@@ -26,6 +27,13 @@ func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 	if err != nil {
 		log.Println("Failed to create connection: ", err)
 		return nil, err
+	}
+
+	if file, err := conn.(*net.TCPConn).File(); err != nil {
+		log.Println("Error casting conn to file", err)
+	} else {
+		fd := int(file.Fd())
+		syscall.SetsockoptInt( fd, syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1)
 	}
 
 	this.maxOutstandingTransactions += 1

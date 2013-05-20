@@ -25,7 +25,8 @@ func NewServer(port int, c chan *Connection, a Authenticator) *Server {
 
 func (this *Server) Start() error {
 
-	ln, err := net.Listen("tcp", "0.0.0.0:"+strconv.Itoa(this.port))
+	log.Println("Listening on ", ":"+strconv.Itoa(this.port) )
+	ln, err := net.Listen("tcp", ":"+strconv.Itoa(this.port))
 	if err != nil {
 		log.Fatal(err)
 		return err
