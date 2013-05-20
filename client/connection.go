@@ -6,7 +6,7 @@ import (
 )
 
 type Connection struct {
-	msg *msg.Message
-	out io.ReadWriteCloser
+	Res *msg.Message
+	Out io.ReadWriteCloser
 }
 

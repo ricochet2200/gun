@@ -60,6 +60,12 @@ func (this *Message) AddAttribute(tlv TLV) {
 	this.header.length += ((tlv.Length() +3 ) / 4) * 4
 }
 
+func (this *Message) CopyAttributes(other *Message) {
+	for _, a := range other.attr {
+		this.AddAttribute(a)
+	}
+}
+
 func (this *Message) Attribute(t TLVType) (TLV, error) {
 	for _, a := range this.attr {
 		if a.Type() == t {

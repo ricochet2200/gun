@@ -58,7 +58,7 @@ func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 			case msg.StaleNonce :
 				log.Println("Stale Nonce, calling authenticate...")
 				conn.Close()
-				return this.Authenticate(res)
+				return this.Authenticate(res, req)
 
 			case msg.Unauthorized :
 				log.Println("unauthorized")
@@ -68,12 +68,8 @@ func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 					return nil, errors.New("Invalid credentials")
 				} else {
 					conn.Close()
-					return this.Authenticate(res)
+					return this.Authenticate(res, req)
 				}
-
-			case msg.BadRequest:
-					conn.Close()
-					return nil, errors.New("Client error. Bad Request")
 			}
 		}
 	}
@@ -90,13 +86,13 @@ func (this *Client) Bind() (net.IP, int, error) {
 		return nil, -1, err
 	} 
 
-	c.out.Close()
+//	c.Out.Close()
 	return ToIPPort(c)
 }	
 
 func ToIPPort(conn *Connection) (net.IP, int, error) {
 
-	xor, err := conn.msg.Attribute(msg.XORMappedAddress)
+	xor, err := conn.Res.Attribute(msg.XORMappedAddress)
 	if err != nil {
 		return nil, -1, err
 	} 
@@ -106,9 +102,11 @@ func ToIPPort(conn *Connection) (net.IP, int, error) {
 }
 
 
-func (this *Client) Authenticate(res *msg.Message) (*Connection, error) {
+func (this *Client) Authenticate(res, oldReq *msg.Message) (*Connection, error) {
 
 	req := msg.NewRequest(msg.Request | msg.Binding)
+	req.CopyAttributes(oldReq) 
+
 	user, err := msg.NewUser(this.username)
 	if err != nil {
 		return nil, err
