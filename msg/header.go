@@ -12,12 +12,13 @@ import (
 
 type MessageType uint16
 
+// See page 10 of RFC 5389
 const (
 	//Classes
-	Request    MessageType = 0x0b00
-	Indication MessageType = 0x0b01
-	Success    MessageType = 0x0b01
-	Error      MessageType = 0x0b11
+	Request    MessageType = 0x0000
+	Indication MessageType = 0x0010
+	Success    MessageType = 0x0100
+	Error      MessageType = 0x0110
 
 	// Methods
 	Binding MessageType = 0x0001
