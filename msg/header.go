@@ -24,6 +24,33 @@ const (
 	Binding MessageType = 0x0001
 )
 
+const MethodMask MessageType = 0x3EEF
+const ClassMask MessageType = 0x0110
+
+var methodTypeToString map[MessageType]string = make(map[MessageType]string)
+var classTypeToString map[MessageType]string = make(map[MessageType]string)
+
+func init() {
+	RegisterMethodType(Binding, "Binding")
+	classTypeToString[Request] = "Request"
+	classTypeToString[Indication] = "Indication"
+	classTypeToString[Success] = "Success"
+	classTypeToString[Error] = "Error"
+}
+
+func RegisterMethodType(t MessageType, prettyName string) {
+
+	if t & ClassMask > 0 {
+		panic("Invalid method number, see rfc 5389 for details")
+	}
+
+	if _, contains := methodTypeToString[t]; contains {
+		panic("Message Type already registered")
+	}
+
+	methodTypeToString[t] = prettyName
+}
+
 var MagicCookie = []byte{33, 18, 164, 66}
 
 type Header struct {
@@ -92,6 +119,23 @@ func (this *Header) Type() MessageType {
 	return this.msgType
 }
 
+func (this *Header) TypeString() string {
+	ret := ""
+	if v, contains := classTypeToString[this.msgType & ClassMask]; contains {
+		ret += v + " "
+	} else {
+		panic("Message type has no class")
+	}
+
+	if v, contains := methodTypeToString[this.msgType & MethodMask]; contains {
+		ret += v
+	} else {
+		panic("Message type has no method")
+	}
+
+	return ret
+}
+
 func (this *Header) Copy() *Header {
 	return &Header{this.msgType, this.length, this.id}
 }
@@ -124,7 +168,7 @@ func (this *Header) Data() []byte {
 
 func (this *Header) String() string {
 
-	ret := "Header:\ntype: " + strconv.Itoa(int(this.msgType))
+	ret := "Header:\ntype: " + this.TypeString()
 	ret += "\nlength: " + strconv.Itoa(int(this.length))
 	ret += "\nid: "
 	for i := 0; i < len(this.id); i += 4 {
