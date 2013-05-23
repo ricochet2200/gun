@@ -41,3 +41,18 @@ func BytesToDuration(b []byte) time.Duration {
 
 	return time.Duration(t)*time.Nanosecond
 }
+
+func StringToLengthValue(s string) []byte {
+	b := []byte(s)
+	l := []byte{byte(len(b))}
+	return append(l, b...)
+}
+
+func LengthValueToString(b []byte) []string {
+	ret := []string{}
+	for i := 0; i < len(b); {
+		length := int(b[i])
+		ret = append( ret,  string(b[i+1:length]) )
+	}
+	return ret
+}

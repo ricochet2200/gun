@@ -101,7 +101,6 @@ func ToIPPort(conn *Connection) (net.IP, int, error) {
 	return msg.IP(xor), msg.Port(xor), nil
 }
 
-
 func (this *Client) Authenticate(res, oldReq *msg.Message) (*Connection, error) {
 
 	req := msg.NewRequest(msg.Request | msg.Binding)
