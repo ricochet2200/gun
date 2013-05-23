@@ -19,6 +19,13 @@ const MessageIntegrity TLVType = 0x0008
 const Realm TLVType = 0x0014
 const Nonce TLVType = 0x0015
 
+func init() {
+	RegisterAttributeType(Username, "Username")
+	RegisterAttributeType(MessageIntegrity, "Message Integrity")
+	RegisterAttributeType(Realm, "Realm")
+	RegisterAttributeType(Nonce, "Nonce")
+}
+
 type RealmAttr struct {
 	TLV
 }

@@ -9,6 +9,9 @@ import (
 )
 
 const XORMappedAddress TLVType = 0x0020
+func init() {
+	RegisterAttributeType(XORMappedAddress, "XOR Mapped Address")
+}
 
 type XORAddress struct {
 	TLV

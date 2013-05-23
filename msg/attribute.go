@@ -45,6 +45,23 @@ const Software TLVType = 0x8022
 const AlternateServer TLVType = 0x8023
 const FingerPrint TLVType = 0x8028
 
+var tlvTypeToString map[TLVType]string = make(map[TLVType]string)
+
+func init() {
+	RegisterAttributeType(MappedAddress, "Mapped Address")
+	RegisterAttributeType(ErrorCode, "Error Code")
+	RegisterAttributeType(UnknownTLVTypes, "Unknown Type")
+	RegisterAttributeType(AlternateServer, "Alternative Server")
+	RegisterAttributeType(FingerPrint, "Finger Print")
+}
+
+func RegisterAttributeType(t TLVType, prettyName string) {
+	if _, contains := tlvTypeToString[t]; contains {
+		panic("TLV Type already registered")
+	}
+
+	tlvTypeToString[t] = prettyName
+}
 
 
 type StunErrorCode int16
@@ -129,6 +146,14 @@ func (this *TLVBase) Type() TLVType {
 	return this.attrType
 }
 
+func (this *TLVBase) TypeString() string {
+	v, ok := tlvTypeToString[this.Type()]
+	if ok {
+		return v
+	}
+	panic("Unregistered type")
+}
+
 func (this *TLVBase) Length() uint16 {
 	return uint16(len(this.Value()))
 }
@@ -138,7 +163,7 @@ func (this *TLVBase) Value() []byte {
 }
 
 func (this *TLVBase) String() string {
-	ret := "TLVBase:\nAttribute Type: " + strconv.Itoa(int(this.Type()))
+	ret := "TLVBase:\nAttribute Type: " + this.TypeString()
 	ret += "\nLength: " + strconv.Itoa(int(this.Length()))
 	return ret // "\nvalue: " + string(this.Value())
 }
