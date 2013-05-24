@@ -72,11 +72,16 @@ func (this *XORAddress) IP() net.IP {
 	return v
 }
 
-func (this *XORAddress) Port() int {
+func (this *XORAddress) PortByteArray() []byte {
 	p := this.Value()[2:4]
 	for i := 0; i < 2; i++ {
 		p[i] = p[i] ^ MagicCookie[i]
 	}
+	return p
+}
+
+func (this *XORAddress) Port() int {
+	p := this.PortByteArray()
 
 	var port uint16 = 0
 	binary.Read(bytes.NewBuffer(p), binary.BigEndian, &port)
