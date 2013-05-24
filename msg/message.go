@@ -55,7 +55,21 @@ func (this *Message) Header() *Header {
 }
 
 func (this *Message) AddAttribute(tlv TLV) {
-	this.attr = append(this.attr, tlv)
+
+	inserted := false
+	for i, a := range this.attr {
+		if tlv.Type() == a.Type() {
+			this.header.length -= ((a.Length() +3 ) / 4) * 4
+			this.attr[i] = tlv
+			inserted = true
+			break
+		}
+	}
+
+	if !inserted {
+		this.attr = append(this.attr, tlv)
+	}
+
 	// make sure it is on a 4 byte block
 	this.header.length += ((tlv.Length() +3 ) / 4) * 4
 }

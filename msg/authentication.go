@@ -60,7 +60,13 @@ func NewNonce() (*NonceAttr) {
 }
 
 func (this *NonceAttr) String() string {
-	return string(this.Value())
+	var ret int64 = 0
+	err := binary.Read(bytes.NewBuffer(this.Value()), binary.BigEndian, &ret)
+	if err != nil {
+		return "Error"
+	}
+	
+	return time.Unix(ret, 0).String()
 }
 
 func ValidNonce(t TLV) bool {
