@@ -67,8 +67,8 @@ func RegisterAttributeType(t TLVType, name string, f func(TLVType,[]byte) TLV) {
 	tlvTypeToFunc[t] = f
 }
 
+// No need to register these because they are context specific
 type StunErrorCode int16
-
 const TryAlternative StunErrorCode = 300
 const BadRequest StunErrorCode = 400
 const Unauthorized StunErrorCode = 401
@@ -80,6 +80,7 @@ type TLV interface {
 	Type() TLVType
 	TypeString() string
 	Value() []byte
+	ValueToString() string
 	Length() uint16
 	Encode() []byte
 	String() string
@@ -166,10 +167,12 @@ func (this *TLVBase) Value() []byte {
 	return this.value
 }
 
+func (this *TLVBase) ValueToString() string {
+	return string(this.Value())
+}
+
 func (this *TLVBase) String() string {
-	ret := "TLVBase:\nAttribute Type: " + this.TypeString()
-//	ret += "\nLength: " + strconv.Itoa(int(this.Length()))
-	return ret // "\nvalue: " + string(this.Value())
+	return this.TypeString()
 }
 
 type StunError struct {
