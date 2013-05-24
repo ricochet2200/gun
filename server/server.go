@@ -49,12 +49,13 @@ func (this *Server) Start() error {
 
 func (this *Server) handleConnection(out net.Conn, ip net.IP, port int) {
 
-	log.Println("Recieved Message from client")
 	req, err := msg.DecodeMessage(out)
 	if err != nil {
 		log.Println(err)
 		return
 	}
+
+	log.Println("Recieved", req.Header().TypeString())
 
 	conn := &Connection{Req: req, Out: out, IP: ip, Port: port}
 
