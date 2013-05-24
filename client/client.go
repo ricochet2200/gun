@@ -60,7 +60,7 @@ func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 	this.maxOutstandingTransactions += 1
 
 	conn.Write(req.EncodeMessage())
-	
+
 	res, err := msg.DecodeMessage(conn)
 	this.maxOutstandingTransactions -= 1
 

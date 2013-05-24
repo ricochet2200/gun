@@ -3,7 +3,7 @@ package msg
 import (
 	"errors"
 	"io"
-//	"log"
+	"log"
 )
 
 type Message struct {
@@ -32,10 +32,13 @@ func DecodeMessage(conn io.Reader) (*Message, error) {
 
 	tvl := []TLV{}
 	for i := uint16(0); i < header.length; {
-		if t, padding, err := Decode(conn); err == nil {
+		if t, padding, err := Decode(conn); err != nil {
+			log.Println(err)
+			return nil, err
+		} else {
 			tvl = append(tvl, t)
 			i += t.Length() + uint16(padding)
-		}
+		} 
 	}
 
 	return &Message{header, tvl}, err

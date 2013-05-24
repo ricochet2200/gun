@@ -120,24 +120,24 @@ func Decode(in io.Reader) (TLV, int, error) {
 	buf, err := Read(in, 4)
 	if err != nil {
 		log.Println("TLV missing header", err)
-		return nil, 0, err
+		return nil, len(buf), err
 	}
 
 	var t TLVType = 0
 	err = binary.Read(bytes.NewBuffer(buf[0:2]), binary.BigEndian, &t)
 	if err != nil {
-		return nil, 0, err
+		return nil, len(buf), err
 	}
 	
 	var length uint16 = 0
 	err = binary.Read(bytes.NewBuffer(buf[2:4]), binary.BigEndian, &length)
 	if err != nil {
-		return nil, 0, err
+		return nil, len(buf), err
 	}
 
 	v, err := Read(in, int(length))
 	if err != nil {
-		return nil, 0, err
+		return nil, len(v) + 4, err
 	}
 
 	padding := int(length % 4)
