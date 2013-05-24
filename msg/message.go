@@ -15,8 +15,11 @@ func NewRequest(msgType MessageType) *Message {
 	return &Message{NewHeader(msgType, 0), []TLV{}}
 }
 
+// msgType should only include a class.  The method will be taken from
+// the req.
 func NewResponse(msgType MessageType, req *Message) *Message {
-	header := &Header{msgType, 0, req.header.id}
+	t := req.Header().Type() & MethodMask | msgType & ClassMask
+	header := &Header{t, 0, req.header.id}
 	return &Message{header, []TLV{}}
 }
 

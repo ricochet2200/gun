@@ -63,7 +63,7 @@ func (this *Server) handleConnection(out net.Conn, ip net.IP, port int) {
 
 		if this.auth == nil {
 			log.Println("Binding to address:", ip, port)
- 			res := msg.NewResponse(msg.Success|msg.Binding, req)
+ 			res := msg.NewResponse(msg.Success, req)
 			xorAddr := msg.NewXORAddress(ip, port, res.Header())
 			res.AddAttribute(xorAddr)
 			
@@ -172,7 +172,7 @@ func (this *Server) Validate(conn *Connection) bool {
 
 func (this *Server) RespondBind(conn *Connection) {
 
-	res := msg.NewResponse(msg.Success|msg.Binding, conn.Req)
+	res := msg.NewResponse(msg.Success, conn.Req)
 	xorAddr := msg.NewXORAddress(conn.IP, conn.Port, res.Header())
 	res.AddAttribute(xorAddr)
 	
