@@ -18,5 +18,14 @@ type Connection struct {
 }
 
 func (this *Connection) Write(res *msg.Message) {
+
+	xorAddr := msg.NewXORAddress(this.IP, this.Port, res.Header())
+	res.AddAttribute(xorAddr)
+	
+	if this.HasAuth {
+		i := msg.NewIntegrityAttr(this.User, this.Passwd, this.Realm, this.Req)
+		res.AddAttribute(i)
+	}
+
 	this.Out.Write(res.EncodeMessage())
 }

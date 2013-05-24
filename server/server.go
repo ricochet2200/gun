@@ -17,10 +17,16 @@ type Server struct {
 	port int
 	conns chan *Connection
 	auth Authenticator
+	realm *msg.RealmAttr
 }
 
 func NewServer(port int, c chan *Connection, a Authenticator) *Server {
-	return &Server{port, c, a}
+	
+	r, e := msg.NewRealm(Realm)
+	if e != nil {
+		panic(e)
+	}
+	return &Server{port, c, a, r}
 }
 
 func (this *Server) Start() error {
@@ -57,7 +63,7 @@ func (this *Server) handleConnection(out net.Conn, ip net.IP, port int) {
 
 	log.Println("Recieved", req.Header().TypeString())
 
-	conn := &Connection{Req: req, Out: out, IP: ip, Port: port}
+	conn := &Connection{Req: req, Out: out, Realm: Realm, IP: ip, Port: port}
 
 	switch req.Type() {
 	case msg.Binding | msg.Request:
@@ -75,7 +81,7 @@ func (this *Server) handleConnection(out net.Conn, ip net.IP, port int) {
 		} 
 
 		if this.Validate(conn) {
-			this.RespondBind(conn)		
+			conn.Write(msg.NewResponse(msg.Success, req))
 			this.conns <- conn
 		}
 
@@ -90,7 +96,6 @@ func (this *Server) handleConnection(out net.Conn, ip net.IP, port int) {
 func (this *Server) Validate(conn *Connection) bool {
 
 	req := conn.Req
-	conn.Realm = Realm
 	
 	// Request attributes
 	integrity, iErr := req.Attribute(msg.MessageIntegrity)
@@ -101,7 +106,6 @@ func (this *Server) Validate(conn *Connection) bool {
 
 	// Response attributes
 	res := msg.NewResponse(msg.Error, req)
-	r, _ := msg.NewRealm(Realm)
 	n := msg.NewNonce()
 
 	if uErr == nil {
@@ -116,7 +120,7 @@ func (this *Server) Validate(conn *Connection) bool {
 		// Reject request
 		e, _ := msg.NewErrorAttr(msg.Unauthorized, "Unauthorized")
 		res.AddAttribute(e)
-		res.AddAttribute(r)
+		res.AddAttribute(this.realm)
 		res.AddAttribute(n)
 		
 		log.Println("No Integrity")
@@ -137,7 +141,7 @@ func (this *Server) Validate(conn *Connection) bool {
 		res := msg.NewResponse(msg.Error, req)
 		e, _ := msg.NewErrorAttr(msg.Unauthorized, "User Not Found")
 		res.AddAttribute(e)
-		res.AddAttribute(r)
+		res.AddAttribute(this.realm)
 		res.AddAttribute(n)
 		
 		log.Println("User Not Found")
@@ -148,7 +152,7 @@ func (this *Server) Validate(conn *Connection) bool {
 		// Reject request
 		e, _ := msg.NewErrorAttr(msg.StaleNonce, "Stale Nonce")
 		res.AddAttribute(e)
-		res.AddAttribute(r)
+		res.AddAttribute(this.realm)
 		res.AddAttribute(n)
 		
 		log.Println("Invalid Nonce")
@@ -159,7 +163,7 @@ func (this *Server) Validate(conn *Connection) bool {
 
 		e, _ := msg.NewErrorAttr(msg.Unauthorized, "Unauthorized")
 		res.AddAttribute(e)
-		res.AddAttribute(r)
+		res.AddAttribute(this.realm)
 		res.AddAttribute(n)
 		
 		log.Println("Invalid integrity")
@@ -168,18 +172,4 @@ func (this *Server) Validate(conn *Connection) bool {
 	}
 
 	return true
-}
-
-func (this *Server) RespondBind(conn *Connection) {
-
-	res := msg.NewResponse(msg.Success, conn.Req)
-	xorAddr := msg.NewXORAddress(conn.IP, conn.Port, res.Header())
-	res.AddAttribute(xorAddr)
-	
-	if conn.HasAuth {
-		i := msg.NewIntegrityAttr(conn.User, conn.Passwd, conn.Realm, conn.Req)
-		res.AddAttribute(i)
-	}
-
-	conn.Write(res)
 }
