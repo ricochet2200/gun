@@ -18,8 +18,11 @@ type XORAddress struct {
 	TLV
 }
 
-func NewXORAddress(ip net.IP, port int, header *Header) *XORAddress {
+func NewXORAddress(ip net.IP, port int, h *Header) *XORAddress {
+	return &XORAddress{&TLVBase{XORMappedAddress, XORAddrBytes(ip, port, h)}}
+}
 
+func XORAddrBytes(ip net.IP, port int, header *Header) []byte {
 	xip := []byte{0,0,4,0}
 	xport := []byte{0, 0}
 	binary.BigEndian.PutUint16(xport, uint16(port))
@@ -52,15 +55,12 @@ func NewXORAddress(ip net.IP, port int, header *Header) *XORAddress {
 	value := []byte{0, 1} // TODO: Add Family correctly
 	value = append(value, xport...)
 	value = append(value, xip...)
-
-	return &XORAddress{&TLVBase{XORMappedAddress, value}}
+	return value
 }
 
-func (this *XORAddress) IP() net.IP {
-
-	v := this.Value()[4:]
+func DecodeIP(ip []byte) net.IP {
 	for i := 0; i < 4; i++ {
-		v[i] = v[i] ^ MagicCookie[i]
+		ip[i] = ip[i] ^ MagicCookie[i]
 	}
 
 	// TODO: Make IPV6 work	
@@ -69,15 +69,22 @@ func (this *XORAddress) IP() net.IP {
 			v[i] = v[i] ^ this.header.id[i-4]
 		}
 	}*/
-	return v
+	return ip
 }
 
-func (this *XORAddress) PortByteArray() []byte {
-	p := this.Value()[2:4]
+func (this *XORAddress) IP() net.IP {
+	return DecodeIP(this.Value()[4:])
+}
+
+func DecodePort(p []byte) []byte {
 	for i := 0; i < 2; i++ {
 		p[i] = p[i] ^ MagicCookie[i]
 	}
 	return p
+}
+
+func (this *XORAddress) PortByteArray() []byte {
+	return DecodePort(this.Value()[2:4])
 }
 
 func (this *XORAddress) Port() int {
