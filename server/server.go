@@ -90,7 +90,6 @@ func (this *Server) handleConnection(out net.Conn, ip net.IP, port int) {
 func (this *Server) Validate(conn *Connection) bool {
 
 	req := conn.Req
-	out := conn.Out
 	conn.Realm = Realm
 	
 	// Request attributes
@@ -121,7 +120,7 @@ func (this *Server) Validate(conn *Connection) bool {
 		res.AddAttribute(n)
 		
 		log.Println("No Integrity")
-		out.Write(res.EncodeMessage())
+		conn.Write(res)
 		return false
 
 	} else if uErr != nil || rErr != nil || nErr != nil {
@@ -130,7 +129,7 @@ func (this *Server) Validate(conn *Connection) bool {
 		res.AddAttribute(e)
 		
 		log.Println("Missing user, nonce, or realm")
-		out.Write(res.EncodeMessage())
+		conn.Write(res)
 		return false
 
 	} else if !ok {
@@ -142,7 +141,7 @@ func (this *Server) Validate(conn *Connection) bool {
 		res.AddAttribute(n)
 		
 		log.Println("User Not Found")
-		out.Write(res.EncodeMessage())	
+		conn.Write(res)	
 		return false
 
 	} else if !msg.ValidNonce(nonce) {
@@ -152,8 +151,8 @@ func (this *Server) Validate(conn *Connection) bool {
 		res.AddAttribute(r)
 		res.AddAttribute(n)
 		
-		log.Println("Invalide Nonce")
-		out.Write(res.EncodeMessage())
+		log.Println("Invalid Nonce")
+		conn.Write(res)
 		return false
 		
 	} else if !msg.ToIntegrity(integrity).Valid(conn.User, conn.Passwd, Realm, req) {
@@ -164,7 +163,7 @@ func (this *Server) Validate(conn *Connection) bool {
 		res.AddAttribute(n)
 		
 		log.Println("Invalid integrity")
-		out.Write(res.EncodeMessage())
+		conn.Write(res)
 		return false
 	}
 
@@ -182,5 +181,5 @@ func (this *Server) RespondBind(conn *Connection) {
 		res.AddAttribute(i)
 	}
 
-	conn.Out.Write(res.EncodeMessage())
+	conn.Write(res)
 }
