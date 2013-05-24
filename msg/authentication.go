@@ -20,10 +20,15 @@ const Realm TLVType = 0x0014
 const Nonce TLVType = 0x0015
 
 func init() {
-	RegisterAttributeType(Username, "Username")
-	RegisterAttributeType(MessageIntegrity, "Message Integrity")
-	RegisterAttributeType(Realm, "Realm")
-	RegisterAttributeType(Nonce, "Nonce")
+	u := func(t TLVType, b []byte) TLV { return &UserAttr{NewTLV(t, b)} }
+	m := func(t TLVType, b []byte) TLV { return &IntegrityAttr{NewTLV(t, b)} }
+	r := func(t TLVType, b []byte) TLV { return &RealmAttr{NewTLV(t, b)} }
+	n := func(t TLVType, b []byte) TLV { return &NonceAttr{NewTLV(t, b)} }
+
+	RegisterAttributeType(Username, "Username", u)
+	RegisterAttributeType(MessageIntegrity, "Message Integrity", m)
+	RegisterAttributeType(Realm, "Realm", r)
+	RegisterAttributeType(Nonce, "Nonce", n)
 }
 
 type RealmAttr struct {
@@ -40,8 +45,8 @@ func NewRealm(realm string) (*RealmAttr, error) {
 	return &RealmAttr{&TLVBase{Realm, []byte(realm)}}, nil
 }
 
-func RealmString(t TLV) string {
-	return string(t.Value())
+func (this *RealmAttr) String() string {
+	return string(this.Value())
 }
 
 type NonceAttr struct {
@@ -54,8 +59,8 @@ func NewNonce() (*NonceAttr) {
 	return &NonceAttr{&TLVBase{Nonce, TimeToBytes(expires)}}
 }
 
-func NonceString(t TLV) string {
-	return string(t.Value())
+func (this *NonceAttr) String() string {
+	return string(this.Value())
 }
 
 func ValidNonce(t TLV) bool {
@@ -83,8 +88,8 @@ func NewUser(username string) (*UserAttr, error) {
 	return &UserAttr{&TLVBase{Username, []byte(username)}}, nil
 }
 
-func UserString (t TLV) string {
-	return string(t.Value())
+func (this *UserAttr) String () string {
+	return string(this.Value())
 }
 
 type IntegrityAttr struct {

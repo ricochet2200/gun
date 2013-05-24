@@ -105,7 +105,7 @@ func (this *Server) Validate(conn *Connection) bool {
 	n := msg.NewNonce()
 
 	if uErr == nil {
-		conn.User = msg.UserString(user)
+		conn.User = user.(*msg.UserAttr).String()
 		conn.Passwd, ok = this.auth.Password(conn.User)
 		if ok {
 			conn.HasAuth = true

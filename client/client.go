@@ -37,8 +37,8 @@ func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 		req.AddAttribute(this.realm)		
 		req.AddAttribute(this.nonce)
 		
-		username := msg.UserString(this.user)
-		realm := msg.RealmString(this.realm)
+		username := this.user.String()
+		realm := this.realm.String()
 		
 		integrity := msg.NewIntegrityAttr(username,	this.password, realm, req)
 		req.AddAttribute(integrity)
@@ -119,7 +119,7 @@ func ToIPPort(conn *Connection) (net.IP, int, error) {
 	} 
 	
 	log.Println("Good message recieved")
-	return msg.IP(xor), msg.Port(xor), nil
+	return xor.(*msg.XORAddress).IP(), xor.(*msg.XORAddress).Port(), nil
 }
 
 func (this *Client) Authenticate(res, oldReq *msg.Message) (*Connection, error) {

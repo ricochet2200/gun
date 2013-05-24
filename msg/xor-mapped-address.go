@@ -3,26 +3,19 @@ package msg
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"log"
 	"net"
 )
 
 const XORMappedAddress TLVType = 0x0020
 func init() {
-	RegisterAttributeType(XORMappedAddress, "XOR Mapped Address")
+
+	x := func(t TLVType, b []byte) TLV { return &XORAddress{NewTLV(t, b)} }
+	RegisterAttributeType(XORMappedAddress, "XOR Mapped Address", x)
 }
 
 type XORAddress struct {
 	TLV
-	header *Header
-}
-
-func ToXORAddress(tlv TLV, header *Header) (*XORAddress, error) {
-	if tlv.Type() == XORMappedAddress {
-		return &XORAddress{tlv, header}, nil
-	}
-	return nil, errors.New("This is not an XORAddress message")
 }
 
 func NewXORAddress(ip net.IP, port int, header *Header) *XORAddress {
@@ -60,12 +53,12 @@ func NewXORAddress(ip net.IP, port int, header *Header) *XORAddress {
 	value = append(value, xport...)
 	value = append(value, xip...)
 
-	return &XORAddress{&TLVBase{XORMappedAddress, value}, header}
+	return &XORAddress{&TLVBase{XORMappedAddress, value}}
 }
 
-func IP(t TLV) net.IP {
+func (this *XORAddress) IP() net.IP {
 
-	v := t.Value()[4:]
+	v := this.Value()[4:]
 	for i := 0; i < 4; i++ {
 		v[i] = v[i] ^ MagicCookie[i]
 	}
@@ -79,8 +72,8 @@ func IP(t TLV) net.IP {
 	return v
 }
 
-func Port(t TLV) int {
-	p := t.Value()[2:4]
+func (this *XORAddress) Port() int {
+	p := this.Value()[2:4]
 	for i := 0; i < 2; i++ {
 		p[i] = p[i] ^ MagicCookie[i]
 	}

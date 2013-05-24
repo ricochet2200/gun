@@ -46,23 +46,27 @@ const AlternateServer TLVType = 0x8023
 const FingerPrint TLVType = 0x8028
 
 var tlvTypeToString map[TLVType]string = make(map[TLVType]string)
+var tlvTypeToFunc map[TLVType]func(TLVType, []byte) TLV = make(map[TLVType]func(TLVType, []byte) TLV)
 
 func init() {
-	RegisterAttributeType(MappedAddress, "Mapped Address")
-	RegisterAttributeType(ErrorCode, "Error Code")
-	RegisterAttributeType(UnknownTLVTypes, "Unknown Type")
-	RegisterAttributeType(AlternateServer, "Alternative Server")
-	RegisterAttributeType(FingerPrint, "Finger Print")
+
+	f := func(t TLVType, b []byte) TLV{return &TLVBase{t, b}}
+
+	RegisterAttributeType(MappedAddress, "Mapped Address", f)
+	RegisterAttributeType(ErrorCode, "Error Code", f)
+	RegisterAttributeType(UnknownTLVTypes, "Unknown Type", f)
+	RegisterAttributeType(AlternateServer, "Alternative Server", f)
+	RegisterAttributeType(FingerPrint, "Finger Print", f)
 }
 
-func RegisterAttributeType(t TLVType, prettyName string) {
+func RegisterAttributeType(t TLVType, name string, f func(TLVType,[]byte) TLV) {
 	if _, contains := tlvTypeToString[t]; contains {
 		panic("TLV Type already registered")
 	}
 
-	tlvTypeToString[t] = prettyName
+	tlvTypeToString[t] = name
+	tlvTypeToFunc[t] = f
 }
-
 
 type StunErrorCode int16
 
@@ -72,7 +76,6 @@ const Unauthorized StunErrorCode = 401
 const UnknownAttribute StunErrorCode = 420
 const StaleNonce StunErrorCode = 438
 const ServerError StunErrorCode = 500
-
 
 type TLV interface {
 	Type() TLVType
@@ -119,7 +122,7 @@ func Decode(in io.Reader) (TLV, int, error) {
 		return nil, 0, err
 	}
 
-	var t uint16 = 0
+	var t TLVType = 0
 	err = binary.Read(bytes.NewBuffer(buf[0:2]), binary.BigEndian, &t)
 	if err != nil {
 		return nil, 0, err
@@ -139,7 +142,8 @@ func Decode(in io.Reader) (TLV, int, error) {
 	padding := int(length % 4)
 	Read(in, padding)
 
-	return &TLVBase{TLVType(t), v}, padding, nil
+	attr := tlvTypeToFunc[t](t, v)
+	return attr, padding, nil
 }
 
 func (this *TLVBase) Type() TLVType {
