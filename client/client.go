@@ -12,16 +12,37 @@ import (
 type Client struct {
 	server string
 	maxOutstandingTransactions int
-	username string
-	password string 	//TODO: SASLPrep the password
+	user *msg.UserAttr
+	realm *msg.RealmAttr
+	nonce *msg.NonceAttr
+	password string
 }
 
-func NewClient(server, user, passwd string) *Client {
-	return &Client{server, 10, user, passwd}
+func NewClient(server, user, passwd string) (*Client, error) {
+
+	userAttr, err := msg.NewUser(user)
+	if err != nil {
+		return nil, err
+	}
+
+	//TODO: SASLPrep the password
+	return &Client{server, 10, userAttr, nil, nil, passwd}, nil
 }
 
 // Sends a request where you expect to get a response back
 func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
+
+	if this.nonce != nil && this.realm != nil {
+		req.AddAttribute(this.user)
+		req.AddAttribute(this.realm)		
+		req.AddAttribute(this.nonce)
+		
+		username := msg.UserString(this.user)
+		realm := msg.RealmString(this.realm)
+		
+		integrity := msg.NewIntegrityAttr(username,	this.password, realm, req)
+		req.AddAttribute(integrity)
+	}
 
 	conn, err := net.DialTimeout("tcp", this.server, 15 * time.Second)
 	if err != nil {
@@ -106,23 +127,11 @@ func (this *Client) Authenticate(res, oldReq *msg.Message) (*Connection, error) 
 	req := msg.NewRequest(msg.Request | msg.Binding)
 	req.CopyAttributes(oldReq) 
 
-	user, err := msg.NewUser(this.username)
-	if err != nil {
-		return nil, err
-	}
-
-	req.AddAttribute(user)
-
 	r, _ := res.Attribute(msg.Realm)
-	realm := string(r.Value())
-	req.AddAttribute(r)
-	
+	this.realm = r.(*msg.RealmAttr)
 
-	nounce, _ := res.Attribute(msg.Nonce)
-	req.AddAttribute(nounce)
-
-	integrity := msg.NewIntegrityAttr(this.username, this.password, realm, req)
-	req.AddAttribute(integrity)
+	nonce, _ := res.Attribute(msg.Nonce)
+	this.nonce = nonce.(*msg.NonceAttr)
 
 	return this.SendReqRes(req)
 }

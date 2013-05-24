@@ -40,6 +40,10 @@ func NewRealm(realm string) (*RealmAttr, error) {
 	return &RealmAttr{&TLVBase{Realm, []byte(realm)}}, nil
 }
 
+func RealmString(t TLV) string {
+	return string(t.Value())
+}
+
 type NonceAttr struct {
 	TLV
 }
@@ -48,6 +52,10 @@ func NewNonce() (*NonceAttr) {
 	// TODO: Pick a better nonce
 	expires := time.Now().Add(time.Duration(1) * time.Minute)
 	return &NonceAttr{&TLVBase{Nonce, TimeToBytes(expires)}}
+}
+
+func NonceString(t TLV) string {
+	return string(t.Value())
 }
 
 func ValidNonce(t TLV) bool {
@@ -75,7 +83,7 @@ func NewUser(username string) (*UserAttr, error) {
 	return &UserAttr{&TLVBase{Username, []byte(username)}}, nil
 }
 
-func ToUsername (t TLV) string {
+func UserString (t TLV) string {
 	return string(t.Value())
 }
 
