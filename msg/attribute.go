@@ -4,9 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"io"
-	"strconv"
+//	"strconv"
 	"errors"
-
 	"log"
 )
 
@@ -79,6 +78,7 @@ const ServerError StunErrorCode = 500
 
 type TLV interface {
 	Type() TLVType
+	TypeString() string
 	Value() []byte
 	Length() uint16
 	Encode() []byte
@@ -168,7 +168,7 @@ func (this *TLVBase) Value() []byte {
 
 func (this *TLVBase) String() string {
 	ret := "TLVBase:\nAttribute Type: " + this.TypeString()
-	ret += "\nLength: " + strconv.Itoa(int(this.Length()))
+//	ret += "\nLength: " + strconv.Itoa(int(this.Length()))
 	return ret // "\nvalue: " + string(this.Value())
 }
 
