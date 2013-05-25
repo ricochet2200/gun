@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"io"
-//	"strconv"
+	"strconv"
 	"errors"
 	"log"
 )
@@ -50,9 +50,10 @@ var tlvTypeToFunc map[TLVType]func(TLVType, []byte) TLV = make(map[TLVType]func(
 func init() {
 
 	f := func(t TLVType, b []byte) TLV{return &TLVBase{t, b}}
+	e := func(t TLVType, b []byte) TLV{return &StunError{&TLVBase{t, b}}}
 
 	RegisterAttributeType(MappedAddress, "Mapped Address", f)
-	RegisterAttributeType(ErrorCode, "Error Code", f)
+	RegisterAttributeType(ErrorCode, "Error Code", e)
 	RegisterAttributeType(UnknownTLVTypes, "Unknown Type", f)
 	RegisterAttributeType(AlternateServer, "Alternative Server", f)
 	RegisterAttributeType(FingerPrint, "Finger Print", f)
@@ -196,13 +197,23 @@ func NewErrorAttr(code StunErrorCode, msg string) (*StunError, error) {
 	return &StunError{&TLVBase{ErrorCode, v}}, nil
 }
 
-func (this *StunError) String() string {
+func (this *StunError) ErrorString() string {
 	return string(this.Value()[4:])
 }
 
-func Code(t TLV) (StunErrorCode, error) {
+func (this *StunError) String() string {
+	code, err := this.Code()
+	codeString := strconv.Itoa(int(code))
+	if err != nil {
+		codeString = "Error, Invalid code"
+	}
+	l := strconv.Itoa(int(this.Length()))
+	return this.TypeString() + l + " :\t" + codeString + "\n" + this.ErrorString()
+}
 
-	buf := t.Value()
+func (this *StunError) Code() (StunErrorCode, error) {
+
+	buf := this.Value()
 	var family uint8 = 0
 	err := binary.Read(bytes.NewBuffer(buf[2:3]), binary.BigEndian, &family)
 	if err != nil {

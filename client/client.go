@@ -72,7 +72,7 @@ func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 	log.Println("Message recieved", res.Header().TypeString())
 
 	if attr, err := res.Attribute(msg.ErrorCode); err == nil {
-		if code, err := msg.Code(attr); err == nil{
+		if code, err := attr.(*msg.StunError).Code(); err == nil{
 			log.Println("error code", code)			
 			switch(code) {
 

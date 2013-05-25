@@ -29,7 +29,7 @@ func DecodeMessage(conn io.Reader) (*Message, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	
 	tvl := []TLV{}
 	for i := uint16(0); i < header.length; {
 		if t, padding, err := Decode(conn); err != nil {
