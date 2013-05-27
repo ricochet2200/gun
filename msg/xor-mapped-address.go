@@ -23,57 +23,57 @@ func NewXORAddress(ip net.IP, port int, h *Header) *XORAddress {
 }
 
 func XORAddrBytes(ip net.IP, port int, header *Header) []byte {
-	xip := []byte{0,0,4,0}
-	xport := []byte{0, 0}
-	binary.BigEndian.PutUint16(xport, uint16(port))
 
-	nip := ip.To4()
-	if nip == nil {
-		log.Println("Unsupported ip type", ip)
-		nip = ip
-	}
+	xip := make([]byte, 16)
 
-	// TODO: Make IPV6 work
-	//	isV4 := ip.To4() != nil
+	// RFC 5389
+	// 0x01:IPv4
+	// 0x02:IPv6
+	family := []byte{0, 1}
 
 	for i := 0; i < net.IPv4len; i++ {
-		xip[i] = nip[i] ^ MagicCookie[i]
+		xip[i] = ip[i] ^ MagicCookie[i]
 	}
 
-	/*	if !isV4 {
+	log.Println(ip)
+	if ip.To4() == nil {
 		log.Println("IPV6 Address found", ip)
 		for i := 4; i < 16; i++ {
-			log.Println(header.id, len(header.id), i)
-			ip[i] = ip[i] ^ header.id[i-4]
+			xip[i] = ip[i] ^ header.id[i-4]
 		}
-	}*/
+		family[1] = 2
+	}
 
+	xport := []byte{0, 0}
+	binary.BigEndian.PutUint16(xport, uint16(port))
 	for i := 0; i < 2; i++ {
 		xport[i] = xport[i] ^ MagicCookie[i]
 	}
 
-	value := []byte{0, 1} // TODO: Add Family correctly
+	value := family
 	value = append(value, xport...)
 	value = append(value, xip...)
 	return value
 }
 
-func DecodeIP(ip []byte) net.IP {
+func DecodeIP(family byte, ip []byte, header *Header) net.IP {
+
 	for i := 0; i < 4; i++ {
 		ip[i] = ip[i] ^ MagicCookie[i]
 	}
 
-	// TODO: Make IPV6 work	
-	/*if this.Length() == 20 {
+	if family == 2 {
 		for i := 4; i < 16; i++ {
-			v[i] = v[i] ^ this.header.id[i-4]
+			ip[i] = ip[i] ^ header.id[i-4]
 		}
-	}*/
+	}
+
 	return ip
 }
 
-func (this *XORAddress) IP() net.IP {
-	return DecodeIP(this.Value()[4:])
+func (this *XORAddress) IP(header *Header) net.IP {
+	v := this.Value()
+	return DecodeIP(v[2], v[4:], header)
 }
 
 func DecodePort(p []byte) []byte {

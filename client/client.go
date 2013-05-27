@@ -113,13 +113,15 @@ func (this *Client) Bind() (net.IP, int, error) {
 
 func ToIPPort(conn *Connection) (net.IP, int, error) {
 
-	xor, err := conn.Res.Attribute(msg.XORMappedAddress)
+	xattr, err := conn.Res.Attribute(msg.XORMappedAddress)
 	if err != nil {
 		return nil, -1, err
 	} 
 	
 	log.Println("Good message recieved")
-	return xor.(*msg.XORAddress).IP(), xor.(*msg.XORAddress).Port(), nil
+	xor := xattr.(*msg.XORAddress)
+	
+	return xor.IP(conn.Res.Header()), xor.Port(), nil
 }
 
 func (this *Client) Authenticate(res, oldReq *msg.Message) (*Connection, error) {
