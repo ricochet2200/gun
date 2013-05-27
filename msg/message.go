@@ -38,6 +38,10 @@ func DecodeMessage(conn io.Reader) (*Message, error) {
 		} else {
 			tvl = append(tvl, t)
 			i += t.Length() + uint16(padding)
+			if (t.Length() + uint16(padding)) % 4 != 0 {
+				log.Println(t.TypeString(), "is not 4 byte aligned")
+				return nil, errors.New(t.TypeString() + " not 4 byte aligned")
+			}
 		} 
 	}
 

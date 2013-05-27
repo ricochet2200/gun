@@ -111,8 +111,11 @@ func (this *TLVBase) Encode() []byte {
 	ret = append(ret, l...)
 
 	v := this.Value()
-	paddingLen := this.Length() % 4
-	v = append(v, make([]byte, paddingLen)...)
+	padding := 4 - (this.Length() % 4)
+	if padding != 4 {
+		v = append(v, make([]byte, padding)...)
+	}
+
 	return append(ret, v...)
 }
 
@@ -141,8 +144,13 @@ func Decode(in io.Reader) (TLV, int, error) {
 		return nil, len(v) + 4, err
 	}
 
-	padding := int(length % 4)
-	Read(in, padding)
+	padding := 4 - int(length % 4)
+	if padding != 4 {
+		Read(in, padding)
+		log.Println("decode padding")
+	} else {
+		padding = 0
+	}
 
 	attr := tlvTypeToFunc[t](t, v)
 	return attr, padding, nil
@@ -207,8 +215,7 @@ func (this *StunError) String() string {
 	if err != nil {
 		codeString = "Error, Invalid code"
 	}
-	l := strconv.Itoa(int(this.Length()))
-	return this.TypeString() + l + " :\t" + codeString + "\n" + this.ErrorString()
+	return this.TypeString() + " :\t" + codeString + "\n" + this.ErrorString()
 }
 
 func (this *StunError) Code() (StunErrorCode, error) {
