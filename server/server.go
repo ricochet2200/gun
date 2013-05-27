@@ -61,8 +61,6 @@ func (this *Server) handleConnection(out net.Conn, ip net.IP, port int) {
 		return
 	}
 
-	log.Println("Recieved", req.Header().TypeString())
-
 	conn := &Connection{Req: req, Out: out, Realm: Realm, IP: ip, Port: port}
 
 	switch req.Type() {
