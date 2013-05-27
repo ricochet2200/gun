@@ -147,7 +147,6 @@ func Decode(in io.Reader) (TLV, int, error) {
 	padding := 4 - int(length % 4)
 	if padding != 4 {
 		Read(in, padding)
-		log.Println("decode padding")
 	} else {
 		padding = 0
 	}
