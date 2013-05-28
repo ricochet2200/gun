@@ -35,7 +35,6 @@ func XORAddrBytes(ip net.IP, port int, header *Header) []byte {
 		xip[i] = ip[i] ^ MagicCookie[i]
 	}
 
-	log.Println(ip)
 	if ip.To4() == nil {
 		log.Println("IPV6 Address found", ip)
 		for i := 4; i < 16; i++ {

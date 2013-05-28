@@ -69,8 +69,6 @@ func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 		return nil, err
 	} 
 
-	log.Println("Message recieved", res.Header().TypeString())
-
 	if attr, err := res.Attribute(msg.ErrorCode); err == nil {
 		if code, err := attr.(*msg.StunError).Code(); err == nil{
 			log.Println("error code", code)			
@@ -98,17 +96,11 @@ func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 	return &Connection{res, conn}, nil
 }
 
-func (this *Client) Bind() (net.IP, int, error) {
+func (this *Client) Bind() (*Connection, error) {
 
 	log.Println("Binding...")
 	req := msg.NewRequest(msg.Request | msg.Binding)
-	c, err := this.SendReqRes(req)
-	if err != nil {
-		return nil, -1, err
-	} 
-
-//	c.Out.Close()
-	return ToIPPort(c)
+	return this.SendReqRes(req)
 }	
 
 func ToIPPort(conn *Connection) (net.IP, int, error) {
@@ -118,7 +110,6 @@ func ToIPPort(conn *Connection) (net.IP, int, error) {
 		return nil, -1, err
 	} 
 	
-	log.Println("Good message recieved")
 	xor := xattr.(*msg.XORAddress)
 	
 	return xor.IP(conn.Res.Header()), xor.Port(), nil
