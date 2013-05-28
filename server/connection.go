@@ -2,13 +2,12 @@ package server
 
 import (
 	"github.com/ricochet2200/gun/msg"
-	"io"
 	"net"
 )
 
 type Connection struct {
 	Req *msg.Message
-	Out io.Writer
+	Out net.Conn
 	IP net.IP
 	Port int
 	User string
