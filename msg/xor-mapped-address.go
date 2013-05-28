@@ -30,18 +30,22 @@ func XORAddrBytes(ip net.IP, port int, header *Header) []byte {
 
 	xip := ip.To4()
 	if xip != nil {
+		ret := make([]byte, net.IPv4len)
+		copy(ret, xip)
 		for i := 0; i < net.IPv4len; i++ {
-			xip[i] = xip[i] ^ MagicCookie[i]
+			ret[i] = xip[i] ^ MagicCookie[i]
 		}
+		xip = ret
 	} else {
-		xip = ip
+		ret := make([]byte, net.IPv6len)
 		for i := 0; i < net.IPv4len; i++ {
-			xip[i] = ip[i] ^ MagicCookie[i]
+			ret[i] = ip[i] ^ MagicCookie[i]
 		}
 		for i := 4; i < 16; i++ {
-			xip[i] = ip[i] ^ header.id[i-4]
+			ret[i] = ip[i] ^ header.id[i-4]
 		}
 		family[1] = 2
+		xip = ret
 	}
 
 	xport := []byte{0, 0}
@@ -58,20 +62,20 @@ func XORAddrBytes(ip net.IP, port int, header *Header) []byte {
 
 func DecodeIP(family byte, ip []byte, header *Header) net.IP {
 
+	v := make([]byte, len(ip))
 	if family == 1 {
-		
 		for i := 0; i < net.IPv4len; i++ {
-			ip[i] = ip[i] ^ MagicCookie[i]
+			v[i] = ip[i] ^ MagicCookie[i]
 		}
-		return ip
+		return v
 	} else {
 		for i := 0; i < net.IPv4len; i++ {
-			ip[i] = ip[i] ^ MagicCookie[i]
+			v[i] = ip[i] ^ MagicCookie[i]
 		}
 		for i := 4; i < 16; i++ {
-			ip[i] = ip[i] ^ header.id[i-4]
+			v[i] = ip[i] ^ header.id[i-4]
 		}
-		return ip
+		return v
 	}
 
 	return nil
@@ -83,10 +87,11 @@ func (this *XORAddress) IP(header *Header) net.IP {
 }
 
 func DecodePort(p []byte) []byte {
+	v := make([]byte, len(p))
 	for i := 0; i < 2; i++ {
-		p[i] = p[i] ^ MagicCookie[i]
+		v[i] = p[i] ^ MagicCookie[i]
 	}
-	return p
+	return v
 }
 
 func (this *XORAddress) PortByteArray() []byte {
