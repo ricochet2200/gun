@@ -65,7 +65,6 @@ func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 	this.maxOutstandingTransactions -= 1
 
 	if err != nil {
-		conn.Close()
 		return nil, err
 	} 
 
@@ -76,17 +75,14 @@ func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 
 			case msg.StaleNonce :
 				log.Println("Stale Nonce, calling authenticate...")
-				conn.Close()
 				return this.Authenticate(res, req)
 
 			case msg.Unauthorized :
 				log.Println("unauthorized")
 
 				if _, err := req.Attribute(msg.MessageIntegrity); err == nil {
-					conn.Close() // We already tried once...
 					return nil, errors.New("Invalid credentials")
 				} else {
-					conn.Close()
 					return this.Authenticate(res, req)
 				}
 			}
