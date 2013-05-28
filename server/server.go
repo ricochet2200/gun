@@ -61,7 +61,7 @@ func (this *Server) handleConnection(out net.Conn, ip net.IP, port int) {
 		return
 	}
 
-	conn := &Connection{Req: req, Out: out, Realm: Realm, IP: ip, Port: port}
+	conn := &Connection{Req: req, Out: out, Realm: Realm}
 
 	switch req.Type() {
 	case msg.Binding | msg.Request:

@@ -94,8 +94,12 @@ func NewUser(username string) (*UserAttr, error) {
 	return &UserAttr{&TLVBase{Username, []byte(username)}}, nil
 }
 
+func (this *UserAttr) User () string {
+	return this.ValueToString()
+}
+
 func (this *UserAttr) String () string {
-	return string(this.Value())
+	return this.ValueToString()
 }
 
 type IntegrityAttr struct {

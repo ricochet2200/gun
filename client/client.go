@@ -32,6 +32,19 @@ func NewClient(server, user, passwd string) (*Client, error) {
 // Sends a request where you expect to get a response back
 func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 
+	conn, err := net.DialTimeout("tcp", this.server, 15 * time.Second)
+	if err != nil {
+		log.Println("Failed to create connection: ", err)
+		return nil, err
+	}
+
+	laddr := conn.LocalAddr()
+	ip := laddr.(*net.TCPAddr).IP
+	port := laddr.(*net.TCPAddr).Port
+	
+	xor := msg.NewXORAddress(ip, port, req.Header())
+	req.AddAttribute(xor)
+
 	if this.nonce != nil && this.realm != nil {
 		req.AddAttribute(this.user)
 		req.AddAttribute(this.realm)		
@@ -42,12 +55,6 @@ func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 		
 		integrity := msg.NewIntegrityAttr(username,	this.password, realm, req)
 		req.AddAttribute(integrity)
-	}
-
-	conn, err := net.DialTimeout("tcp", this.server, 15 * time.Second)
-	if err != nil {
-		log.Println("Failed to create connection: ", err)
-		return nil, err
 	}
 
 	if file, err := conn.(*net.TCPConn).File(); err != nil {
