@@ -3,7 +3,6 @@ package msg
 import (
 	"bytes"
 	"encoding/binary"
-	"log"
 	"net"
 )
 
@@ -24,19 +23,21 @@ func NewXORAddress(ip net.IP, port int, h *Header) *XORAddress {
 
 func XORAddrBytes(ip net.IP, port int, header *Header) []byte {
 
-	xip := make([]byte, 16)
-
 	// RFC 5389
 	// 0x01:IPv4
 	// 0x02:IPv6
 	family := []byte{0, 1}
 
-	for i := 0; i < net.IPv4len; i++ {
-		xip[i] = ip[i] ^ MagicCookie[i]
-	}
-
-	if ip.To4() == nil {
-		log.Println("IPV6 Address found", ip)
+	xip := ip.To4()
+	if xip != nil {
+		for i := 0; i < net.IPv4len; i++ {
+			xip[i] = xip[i] ^ MagicCookie[i]
+		}
+	} else {
+		xip = ip
+		for i := 0; i < net.IPv4len; i++ {
+			xip[i] = ip[i] ^ MagicCookie[i]
+		}
 		for i := 4; i < 16; i++ {
 			xip[i] = ip[i] ^ header.id[i-4]
 		}
@@ -57,22 +58,28 @@ func XORAddrBytes(ip net.IP, port int, header *Header) []byte {
 
 func DecodeIP(family byte, ip []byte, header *Header) net.IP {
 
-	for i := 0; i < 4; i++ {
-		ip[i] = ip[i] ^ MagicCookie[i]
-	}
-
-	if family == 2 {
+	if family == 1 {
+		
+		for i := 0; i < net.IPv4len; i++ {
+			ip[i] = ip[i] ^ MagicCookie[i]
+		}
+		return ip
+	} else {
+		for i := 0; i < net.IPv4len; i++ {
+			ip[i] = ip[i] ^ MagicCookie[i]
+		}
 		for i := 4; i < 16; i++ {
 			ip[i] = ip[i] ^ header.id[i-4]
 		}
+		return ip
 	}
 
-	return ip
+	return nil
 }
 
 func (this *XORAddress) IP(header *Header) net.IP {
 	v := this.Value()
-	return DecodeIP(v[2], v[4:], header)
+	return DecodeIP(v[1], v[4:], header)
 }
 
 func DecodePort(p []byte) []byte {
