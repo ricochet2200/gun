@@ -84,6 +84,14 @@ func (this *Message) AddAttribute(tlv TLV) {
 	this.header.length += ((tlv.Length() +3 ) / 4) * 4
 }
 
+func (this *Message) AddDupAttribute(tlv TLV) {
+
+	this.attr = append(this.attr, tlv)
+
+	// make sure it is on a 4 byte block
+	this.header.length += ((tlv.Length() +3 ) / 4) * 4
+}
+
 func (this *Message) CopyAttributes(other *Message) {
 
 	if other == nil {
@@ -102,6 +110,16 @@ func (this *Message) Attribute(t TLVType) (TLV, error) {
 		}
 	}
 	return nil, errors.New("Message not found")
+}
+
+func (this *Message) Attributes(t TLVType) []TLV {
+	ret := []TLV{}
+	for _, a := range this.attr {
+		if a.Type() == t {
+			ret = append(ret, a)
+		}
+	}
+	return ret
 }
 
 func (this *Message) String() string {
