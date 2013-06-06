@@ -55,7 +55,7 @@ type NonceAttr struct {
 
 func NewNonce() (*NonceAttr) {
 	// TODO: Pick a better nonce
-	expires := time.Now().Add(time.Duration(1) * time.Minute)
+	expires := time.Now().Add(time.Duration(20) * time.Minute)
 	return &NonceAttr{&TLVBase{Nonce, TimeToBytes(expires)}}
 }
 
