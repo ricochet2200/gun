@@ -41,7 +41,7 @@ func XORAddrBytes(ip net.IP, port int, header *Header) []byte {
 		for i := 0; i < net.IPv4len; i++ {
 			ret[i] = ip[i] ^ MagicCookie[i]
 		}
-		for i := 4; i < 16; i++ {
+		for i := 4; i < net.IPv6len; i++ {
 			ret[i] = ip[i] ^ header.id[i-4]
 		}
 		family[1] = 2
