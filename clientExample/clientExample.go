@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/ricochet2200/gun/client"
-	"log"
+//	"log"
 )
 
 
@@ -14,6 +14,6 @@ func main() {
 		panic(err)
 	}
 
-	ip, port, err := client.Bind()
-	log.Println(ip, port, err)
+	/*conn, err :=*/ client.Bind()
+//	log.Println(conn.IP(), conn.Port(), err)
 }
