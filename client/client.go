@@ -60,7 +60,7 @@ func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 	if file, err := conn.(*net.TCPConn).File(); err != nil {
 		log.Println("Error casting conn to file", err)
 	} else {
-		fd := int(file.Fd())
+		fd := syscall.Handle(file.Fd())
 		syscall.SetsockoptInt( fd, syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1)
 	}
 
