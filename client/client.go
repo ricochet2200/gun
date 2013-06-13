@@ -1,21 +1,21 @@
 package client
 
 import (
-	"github.com/ricochet2200/gun/msg"
 	"errors"
+	"github.com/ricochet2200/gun/msg"
 	"log"
 	"net"
-	"time"
 	"syscall"
+	"time"
 )
 
 type Client struct {
-	server string
+	server                     string
 	maxOutstandingTransactions int
-	user *msg.UserAttr
-	realm *msg.RealmAttr
-	nonce *msg.NonceAttr
-	password string
+	user                       *msg.UserAttr
+	realm                      *msg.RealmAttr
+	nonce                      *msg.NonceAttr
+	password                   string
 }
 
 func NewClient(server, user, passwd string) (*Client, error) {
@@ -32,7 +32,7 @@ func NewClient(server, user, passwd string) (*Client, error) {
 // Sends a request where you expect to get a response back
 func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 
-	conn, err := net.DialTimeout("tcp", this.server, 15 * time.Second)
+	conn, err := net.DialTimeout("tcp", this.server, 15*time.Second)
 	if err != nil {
 		log.Println("Failed to create connection: ", err)
 		return nil, err
@@ -41,27 +41,32 @@ func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 	laddr := conn.LocalAddr()
 	ip := laddr.(*net.TCPAddr).IP
 	port := laddr.(*net.TCPAddr).Port
-	
+
 	xor := msg.NewXORAddress(ip, port, req.Header())
 	req.AddAttribute(xor)
 
 	if this.nonce != nil && this.realm != nil {
 		req.AddAttribute(this.user)
-		req.AddAttribute(this.realm)		
+		req.AddAttribute(this.realm)
 		req.AddAttribute(this.nonce)
-		
+
 		username := this.user.String()
 		realm := this.realm.String()
-		
-		integrity := msg.NewIntegrityAttr(username,	this.password, realm, req)
+
+		integrity := msg.NewIntegrityAttr(username, this.password, realm, req)
 		req.AddAttribute(integrity)
 	}
 
 	if file, err := conn.(*net.TCPConn).File(); err != nil {
 		log.Println("Error casting conn to file", err)
 	} else {
-		fd := syscall.Handle(file.Fd())
-		syscall.SetsockoptInt( fd, syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1)
+		fd := file.Fd()
+		switch runtime.GOOS {
+		case "windows":
+			syscall.SetsockoptInt(syscall.Handle(fd), syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1)
+		default:
+			syscall.SetsockoptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1)
+		}
 	}
 
 	this.maxOutstandingTransactions += 1
@@ -73,18 +78,18 @@ func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 
 	if err != nil {
 		return nil, err
-	} 
+	}
 
 	if attr, err := res.Attribute(msg.ErrorCode); err == nil {
-		if code, err := attr.(*msg.StunError).Code(); err == nil{
-			log.Println("error code", code)			
-			switch(code) {
+		if code, err := attr.(*msg.StunError).Code(); err == nil {
+			log.Println("error code", code)
+			switch code {
 
-			case msg.StaleNonce :
+			case msg.StaleNonce:
 				log.Println("Stale Nonce, calling authenticate...")
 				return this.Authenticate(res, req)
 
-			case msg.Unauthorized :
+			case msg.Unauthorized:
 				log.Println("unauthorized")
 
 				if _, err := req.Attribute(msg.MessageIntegrity); err == nil {
@@ -95,7 +100,7 @@ func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 			}
 		}
 	}
-	
+
 	return &Connection{res, conn}, nil
 }
 
@@ -104,24 +109,24 @@ func (this *Client) Bind() (*Connection, error) {
 	log.Println("Binding...")
 	req := msg.NewRequest(msg.Request | msg.Binding)
 	return this.SendReqRes(req)
-}	
+}
 
 func ToIPPort(conn *Connection) (net.IP, int, error) {
 
 	xattr, err := conn.Res.Attribute(msg.XORMappedAddress)
 	if err != nil {
 		return nil, -1, err
-	} 
-	
+	}
+
 	xor := xattr.(*msg.XORAddress)
-	
+
 	return xor.IP(conn.Res.Header()), xor.Port(), nil
 }
 
 func (this *Client) Authenticate(res, oldReq *msg.Message) (*Connection, error) {
 
 	req := msg.NewRequest(msg.Request | msg.Binding)
-	req.CopyAttributes(oldReq) 
+	req.CopyAttributes(oldReq)
 
 	r, _ := res.Attribute(msg.Realm)
 	this.realm = r.(*msg.RealmAttr)
