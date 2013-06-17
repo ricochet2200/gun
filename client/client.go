@@ -58,7 +58,7 @@ func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 	}
 
 	if file, err := conn.(*net.TCPConn).File(); err != nil {
-		log.Println("Error casting conn to file", err)
+		panic("Error casting conn to file"+ err.Error())
 	} else {
 		fd := file.Fd()
 		switch runtime.GOOS {
