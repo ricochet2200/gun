@@ -5,7 +5,6 @@ import (
 	"github.com/ricochet2200/gun/msg"
 	"log"
 	"net"
-	"syscall"
 	"time"
 )
 
@@ -60,13 +59,7 @@ func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 	if file, err := conn.(*net.TCPConn).File(); err != nil {
 		panic("Error casting conn to file"+ err.Error())
 	} else {
-		fd := file.Fd()
-		switch runtime.GOOS {
-		case "windows":
-			syscall.SetsockoptInt(syscall.Handle(fd), syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1)
-		default:
-			syscall.SetsockoptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1)
-		}
+		SetReuseAddr(file.Fd(), 1)
 	}
 
 	this.maxOutstandingTransactions += 1
