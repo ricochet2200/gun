@@ -10,7 +10,6 @@ import (
 
 type Client struct {
 	server                     string
-	maxOutstandingTransactions int
 	user                       *msg.UserAttr
 	realm                      *msg.RealmAttr
 	nonce                      *msg.NonceAttr
@@ -25,7 +24,7 @@ func NewClient(server, user, passwd string) (*Client, error) {
 	}
 
 	//TODO: SASLPrep the password
-	return &Client{server, 10, userAttr, nil, nil, passwd}, nil
+	return &Client{server, userAttr, nil, nil, passwd}, nil
 }
 
 // Sends a request where you expect to get a response back
@@ -56,18 +55,9 @@ func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 		req.AddAttribute(integrity)
 	}
 
-	if file, err := conn.(*net.TCPConn).File(); err != nil {
-		log.Println("Error casting conn to file", err)
-	} else {
-		SetReuseAddr(file.Fd(), 1)
-	}
-
-	this.maxOutstandingTransactions += 1
-
 	conn.Write(req.EncodeMessage())
 
 	res, err := msg.DecodeMessage(conn)
-	this.maxOutstandingTransactions -= 1
 
 	if err != nil {
 		return nil, err
