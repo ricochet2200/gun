@@ -73,8 +73,8 @@ func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 		return nil, err
 	}
 
-	if attr, err := res.Attribute(msg.ErrorCode); err == nil {
-		if code, err := attr.(*msg.StunError).Code(); err == nil {
+	if eattr, err := res.Attribute(msg.ErrorCode); err == nil {
+		if code, err := eattr.(*msg.StunError).Code(); err == nil {
 			log.Println("error code", code)
 			switch code {
 
