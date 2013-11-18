@@ -18,6 +18,10 @@ func main() {
 
 	auth := map[string] string {
 		"user": "password",
+		"user2": "password",
+		"admin": "password",
+		"user-linux" : "password",
+		"user-windows" : "password",
 	}
 	v := &Authenticator{auth}
 
