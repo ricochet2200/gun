@@ -60,6 +60,7 @@ func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 	res, err := msg.DecodeMessage(conn)
 
 	if err != nil {
+		conn.Close()
 		return nil, err
 	}
 
@@ -76,6 +77,7 @@ func (this *Client) SendReqRes(req *msg.Message) (*Connection, error) {
 				log.Println("unauthorized")
 
 				if _, err := req.Attribute(msg.MessageIntegrity); err == nil {
+					conn.Close()
 					return nil, errors.New("Invalid credentials")
 				} else {
 					return this.Authenticate(res, req)
