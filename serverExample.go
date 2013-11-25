@@ -32,7 +32,7 @@ func main() {
 	go func() {
 		for conn := range c {
 			conn = conn
-			log.Println("Unrecognized: ", conn.IP, conn.Port)
+			log.Println("Unrecognized: ", conn.IP(), conn.Port())
 		}
 	}()
 
