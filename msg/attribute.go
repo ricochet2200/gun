@@ -95,7 +95,7 @@ type TLVBase struct {
 	value    []byte
 }
 
-func NewTLV(t TLVType, v []byte) *TLVBase{
+func NewTLV(t TLVType, v []byte) TLV{
 	return &TLVBase{t, v}
 }
 
